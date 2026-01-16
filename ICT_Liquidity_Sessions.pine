@@ -1,4 +1,4 @@
-//@version=5
+//@version=6
 // Combined ICT Liquidity & Sessions Indicator
 // Optimized for white background, mobile-friendly
 // Includes: BSL/SSL, EQH/EQL, Liquidity Sweeps, Weekly/Daily Bias, Power of 3,
@@ -352,8 +352,8 @@ bgcolor(showSessions and show_ny and not na(ny_session) and canShow1H() ? ny_col
 // ===================== PREMIUM/DISCOUNT ZONES =====================
 var GROUP_PD = 'Premium/Discount Zones'
 pdTimeframe = input.timeframe('', 'Timeframe for Analysis', group=GROUP_PD)
-pd_high = input.float(defval=na, title='Range High', group=GROUP_PD)
-pd_low = input.float(defval=na, title='Range Low', group=GROUP_PD)
+pd_high = input.float(0.0, title='Range High (0 = disabled)', group=GROUP_PD)
+pd_low = input.float(0.0, title='Range Low (0 = disabled)', group=GROUP_PD)
 show_premium = input.bool(true, 'Show Premium Zone', group=GROUP_PD)
 show_discount = input.bool(true, 'Show Discount Zone', group=GROUP_PD)
 show_equilibrium = input.bool(true, 'Show Equilibrium', group=GROUP_PD)
@@ -364,7 +364,7 @@ eq_color = input.color(color.new(color.blue, 0), 'Equilibrium', group=GROUP_PD)
 pdTF = pdTimeframe == '' ? getCurrentTF() : pdTimeframe
 showPDOnCurrentTF = shouldShowOnCurrentTF(pdTF)
 
-if showPD and showPDOnCurrentTF and not na(pd_high) and not na(pd_low)
+if showPD and showPDOnCurrentTF and pd_high != 0.0 and pd_low != 0.0
     midline = (pd_high + pd_low) / 2
     premium_start = pd_high - 0.25 * (pd_high - pd_low)
     discount_end = pd_high - 0.75 * (pd_high - pd_low)
@@ -428,7 +428,7 @@ if showAbbreviations and barstate.islast
     if showSessions and canShow1H()
         table.cell(abbrevTable, 0, row, 'SESSIONS', text_color=color.black, text_size=size.small)
         row += 1
-    if showPD and showPDOnCurrentTF and not na(pd_high) and not na(pd_low)
+    if showPD and showPDOnCurrentTF and pd_high != 0.0 and pd_low != 0.0
         table.cell(abbrevTable, 0, row, 'PD', text_color=color.black, text_size=size.small)
         row += 1
     if showRB and showRBOnCurrentTF and (isBullishRB or isBearishRB)

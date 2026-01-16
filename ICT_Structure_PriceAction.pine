@@ -1,4 +1,4 @@
-//@version=5
+//@version=6
 // Combined ICT Structure & Price Action Indicator
 // Optimized for white background, mobile-friendly
 // Includes: Order Blocks, FVG/IFVG, MSS/BOS, Displacement, Mitigation Blocks
