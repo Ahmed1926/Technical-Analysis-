@@ -1,0 +1,2 @@
+There should be the settings of all these indicators lumped into the indicator
+If this is not possible then just follow the notes under the ones I need to change or Claude should manually ask me to set the settings of all these indicators. 
