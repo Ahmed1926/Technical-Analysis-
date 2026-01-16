@@ -18,7 +18,6 @@ showPD = input.bool(false, 'Show Premium/Discount Zones', group=GROUP_GLOBAL)
 showRB = input.bool(true, 'Show Rejection Blocks', group=GROUP_GLOBAL)
 showIPDA = input.bool(true, 'Show IPDA Deviations', group=GROUP_GLOBAL)
 showSND = input.bool(false, 'Show S&D Profile', group=GROUP_GLOBAL)
-showAbbreviations = input.bool(true, 'Show Abbreviations (Top Right)', group=GROUP_GLOBAL)
 
 // ===================== HIGHER TIMEFRAME VISIBILITY CONTROL =====================
 // MTF Visibility Rules:
@@ -538,42 +537,3 @@ if showSND and showSNDOnCurrentTF and london_session_active and not na(asian_hig
         snd_setup := true
         if showSNDLabels
             label.new(bar_index, high, 'S&D', color=sndColor, textcolor=color.white, style=label.style_label_down, size=size.tiny, tooltip='Seek & Destroy setup detected')
-
-// ===================== ABBREVIATIONS TABLE (Top Right) =====================
-var table abbrevTable = table.new(position.top_right, 1, 15, bgcolor=color.new(color.white, 85), frame_color=color.new(color.black, 50), frame_width=1, border_width=1)
-
-if showAbbreviations and barstate.islast
-    row = 0
-    if showBSL_SSL and showBSLOnCurrentTF and (not na(bslLevel) or not na(sslLevel))
-        table.cell(abbrevTable, 0, row, 'BSL/SSL', text_color=color.black, text_size=size.small)
-        row += 1
-    if showEQH_EQL and showEQLOnCurrentTF and (top_v or bottom_v)
-        table.cell(abbrevTable, 0, row, 'EQH/EQL', text_color=color.black, text_size=size.small)
-        row += 1
-    if showLiqSweeps and showSweepOnCurrentTF and (bullishSweepCondition or bearishSweepCondition)
-        table.cell(abbrevTable, 0, row, 'SWEEP', text_color=color.black, text_size=size.small)
-        row += 1
-    if showBias and canShowDaily()
-        table.cell(abbrevTable, 0, row, 'BIAS', text_color=color.black, text_size=size.small)
-        row += 1
-    if showPO3 and canShow1H()
-        table.cell(abbrevTable, 0, row, 'PO3', text_color=color.black, text_size=size.small)
-        row += 1
-    if showDOL and showDOLOnCurrentTF and (array.size(highLiquidityLines) > 0 or array.size(lowLiquidityLines) > 0)
-        table.cell(abbrevTable, 0, row, 'DOL', text_color=color.black, text_size=size.small)
-        row += 1
-    if showSessions and canShow1H()
-        table.cell(abbrevTable, 0, row, 'SESSIONS', text_color=color.black, text_size=size.small)
-        row += 1
-    if showPD and showPDOnCurrentTF and pd_high != 0.0 and pd_low != 0.0
-        table.cell(abbrevTable, 0, row, 'PD', text_color=color.black, text_size=size.small)
-        row += 1
-    if showRB and showRBOnCurrentTF and (isBullishRB or isBearishRB)
-        table.cell(abbrevTable, 0, row, 'RB', text_color=color.black, text_size=size.small)
-        row += 1
-    if showIPDA and showIPDAOnCurrentTF and not na(ipda_swing_high) and not na(ipda_swing_low)
-        table.cell(abbrevTable, 0, row, 'IPDA', text_color=color.black, text_size=size.small)
-        row += 1
-    if showSND and showSNDOnCurrentTF and snd_setup
-        table.cell(abbrevTable, 0, row, 'S&D', text_color=color.black, text_size=size.small)
-        row += 1

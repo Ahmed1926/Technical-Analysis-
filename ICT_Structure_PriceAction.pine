@@ -12,7 +12,6 @@ showFVG = input.bool(true, 'Show FVG/IFVG', group=GROUP_GLOBAL)
 showMSS_BOS = input.bool(true, 'Show MSS/BOS', group=GROUP_GLOBAL)
 showDisplacement = input.bool(true, 'Show Displacement', group=GROUP_GLOBAL)
 showMB = input.bool(true, 'Show Mitigation Blocks', group=GROUP_GLOBAL)
-showAbbreviations = input.bool(true, 'Show Abbreviations (Top Right)', group=GROUP_GLOBAL)
 
 // ===================== HIGHER TIMEFRAME VISIBILITY CONTROL =====================
 // MTF Visibility Rules:
@@ -476,27 +475,3 @@ if mbBullBoxes.size() > mbLookback
 
 if mbBearBoxes.size() > mbLookback
     box.delete(mbBearBoxes.shift())
-
-// ===================== ABBREVIATIONS TABLE (Top Right) =====================
-var table abbrevTable = table.new(position.top_right, 1, 10, bgcolor=color.new(color.white, 85), frame_color=color.new(color.black, 50), frame_width=1, border_width=1)
-
-if showAbbreviations and barstate.islast
-    row = 0
-    if showOB and showOBOnCurrentTF and (array.size(longBoxes) > 0 or array.size(shortBoxes) > 0)
-        table.cell(abbrevTable, 0, row, 'OB', text_color=color.black, text_size=size.small)
-        row += 1
-    if showBB and showBBOnCurrentTF and array.size(breakerBoxes) > 0
-        table.cell(abbrevTable, 0, row, 'BB', text_color=color.black, text_size=size.small)
-        row += 1
-    if showFVG and showFVGOnCurrentTF and fvgBoxes.size() > 0
-        table.cell(abbrevTable, 0, row, 'FVG', text_color=color.black, text_size=size.small)
-        row += 1
-    if showMSS_BOS and showMSSOnCurrentTF and structLines.size() > 0
-        table.cell(abbrevTable, 0, row, 'MSS/BOS', text_color=color.black, text_size=size.small)
-        row += 1
-    if showDisplacement and showDispOnCurrentTF and displacement
-        table.cell(abbrevTable, 0, row, 'DISP', text_color=color.black, text_size=size.small)
-        row += 1
-    if showMB and showMBOnCurrentTF and (mbBullBoxes.size() > 0 or mbBearBoxes.size() > 0)
-        table.cell(abbrevTable, 0, row, 'MB', text_color=color.black, text_size=size.small)
-        row += 1
