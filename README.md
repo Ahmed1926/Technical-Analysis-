@@ -1,2 +1,2 @@
 # Technical-Analysis-
-Automating ICT + SMC concepts by coding them in Pinescript into Tradingview Indicators
+Automating ICT + SMC concepts by coding them in Pinescript turning into Tradingview Indicators
