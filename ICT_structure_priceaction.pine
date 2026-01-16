@@ -1,0 +1,560 @@
+//@version=6
+// Combined ICT Structure & Price Action Indicator
+// Optimized for white background, mobile-friendly
+// Includes: Order Blocks, Breaker Blocks, Propulsion Blocks, FVG/IFVG, MSS/BOS, Displacement, Mitigation Blocks
+indicator('ICT Structure & Price Action [Combined]', overlay=true, max_bars_back=5000, max_boxes_count=500, max_labels_count=500, max_lines_count=500)
+
+// ===================== GLOBAL SETTINGS =====================
+var GROUP_GLOBAL = 'Global Settings'
+showOB = input.bool(true, 'Show Order Blocks', group=GROUP_GLOBAL)
+showBB = input.bool(true, 'Show Breaker Blocks', group=GROUP_GLOBAL)
+showPB = input.bool(true, 'Show Propulsion Blocks', group=GROUP_GLOBAL)
+showFVG = input.bool(true, 'Show FVG/IFVG', group=GROUP_GLOBAL)
+showMSS_BOS = input.bool(true, 'Show MSS/BOS', group=GROUP_GLOBAL)
+showDisplacement = input.bool(true, 'Show Displacement', group=GROUP_GLOBAL)
+showMB = input.bool(true, 'Show Mitigation Blocks', group=GROUP_GLOBAL)
+
+// ===================== HIGHER TIMEFRAME VISIBILITY CONTROL =====================
+canShowWeekly() =>
+    tf = timeframe.period
+    tf == 'W' or tf == 'D'
+
+canShowDaily() =>
+    tfInMinutes = timeframe.in_seconds() / 60
+    tfInMinutes <= 1440 and tfInMinutes >= 240
+
+canShow4H() =>
+    tfInMinutes = timeframe.in_seconds() / 60
+    tfInMinutes <= 240 and tfInMinutes >= 30
+
+canShow1H() =>
+    tfInMinutes = timeframe.in_seconds() / 60
+    tfInMinutes <= 60 and tfInMinutes >= 5
+
+canShow5M() =>
+    tfInMinutes = timeframe.in_seconds() / 60
+    tfInMinutes <= 5 and tfInMinutes >= 1
+
+canShow1M() =>
+    tfInMinutes = timeframe.in_seconds() / 60
+    tfInMinutes == 5 or tfInMinutes == 1
+
+getCurrentTF() =>
+    string result = timeframe.period
+    if canShowWeekly()
+        result := 'W'
+    else if canShowDaily()
+        result := 'D'
+    else if canShow4H()
+        result := '240'
+    else if canShow1H()
+        result := '60'
+    else if canShow5M()
+        result := '5'
+    else if canShow1M()
+        result := '1'
+    result
+
+shouldShowOnCurrentTF(string conceptTF) =>
+    bool show = false
+    if conceptTF == 'W'
+        show := canShowWeekly()
+    else if conceptTF == 'D'
+        show := canShowDaily()
+    else if conceptTF == '240'
+        show := canShow4H()
+    else if conceptTF == '60'
+        show := canShow1H()
+    else if conceptTF == '5'
+        show := canShow5M()
+    else if conceptTF == '1'
+        show := canShow1M()
+    else
+        show := true
+    show
+
+// ===================== ORDER BLOCKS =====================
+var GROUP_OB = 'Order Blocks'
+obTimeframe = input.timeframe('240', 'Timeframe for Analysis (4H recommended)', group=GROUP_OB)
+obRange = input.int(30, 'Candle Range', minval=5, maxval=100, step=1, group=GROUP_OB)
+useMitigatedBlocks = input.bool(true, 'Show Mitigated Blocks', group=GROUP_OB)
+bearishOBColour = input.color(color.new(color.red, 70), title='Bearish OB', group=GROUP_OB)
+bullishOBColour = input.color(color.new(color.green, 70), title='Bullish OB', group=GROUP_OB)
+mitigatedOBColour = input.color(color.new(#808080, 85), title='Mitigated OB', group=GROUP_OB)
+
+obTF = obTimeframe == '' ? getCurrentTF() : obTimeframe
+showOBOnCurrentTF = shouldShowOnCurrentTF(obTF)
+
+// OB Variables - using lines and labels
+var longLines = array.new_line()
+var longLabels = array.new_label()
+var longLineStart = array.new_int()
+var longLineState = array.new_int()
+var shortLines = array.new_line()
+var shortLabels = array.new_label()
+var shortLineStart = array.new_int()
+var shortLineState = array.new_int()
+
+var int lastDownIndex = 0
+var float lastDown = 0
+var float lastLow = 0
+var int lastUpIndex = 0
+var float lastUp = 0
+var float lastUpLow = 0
+var float lastHigh = 0
+var int lastLongIndex = 0
+var int lastShortIndex = 0
+
+structureLowIndexPointer(len) =>
+    float minValue = ta.highest(high, obRange)[1]
+    int minIndex = bar_index
+    for i = 1 to len
+        if low[i] < minValue
+            minValue := low[i]
+            minIndex := bar_index[i]
+    minIndex
+
+float structureLow = ta.lowest(low, obRange)[1]
+int structureLowIndex = structureLowIndexPointer(obRange)
+
+// Bearish break of structure - draw horizontal line at OB high
+if showOB and showOBOnCurrentTF and ta.crossunder(close, structureLow)
+    if (bar_index - lastUpIndex) < 1000
+        array.push(shortLineStart, bar_index)
+        array.push(shortLineState, 0)
+        newLine = line.new(x1=lastUpIndex, y1=lastHigh, x2=bar_index + 50, y2=lastHigh, extend=extend.right, color=color.black, width=2, style=line.style_solid)
+        newLabel = label.new(x=bar_index + 50, y=lastHigh, text='OB-', style=label.style_label_left, color=color.new(color.white, 100), textcolor=color.red, size=size.small)
+        array.push(shortLines, newLine)
+        array.push(shortLabels, newLabel)
+        lastShortIndex := lastUpIndex
+
+// Bullish break of structure - draw horizontal line at OB low
+if showOB and showOBOnCurrentTF and array.size(shortLines) > 0
+    for i = (array.size(shortLines) - 1) to 0
+        sline = array.get(shortLines, i)
+        slabel = array.get(shortLabels, i)
+        lstart = array.get(shortLineStart, i)
+        lstate = array.get(shortLineState, i)
+        lineY = line.get_y1(sline)
+
+        // Check if mitigated (price touched the line)
+        if (high > lineY and low < lineY and bar_index > lstart and lstate == 0 and useMitigatedBlocks)
+            line.set_color(sline, mitigatedOBColour)
+            label.set_textcolor(slabel, mitigatedOBColour)
+            array.set(shortLineState, i, 1)
+
+        // Remove if price closes above
+        if close > lineY
+            line.delete(sline)
+            label.delete(slabel)
+            array.remove(shortLineState, i)
+            array.remove(shortLines, i)
+            array.remove(shortLabels, i)
+            array.remove(shortLineStart, i)
+
+            // Create bullish OB
+            if (bar_index - lastDownIndex) < 1000 and bar_index > lastLongIndex
+                array.push(longLineStart, bar_index + 1)
+                array.push(longLineState, 0)
+                newLine = line.new(x1=lastDownIndex, y1=lastLow, x2=bar_index + 50, y2=lastLow, extend=extend.right, color=color.black, width=2, style=line.style_solid)
+                newLabel = label.new(x=bar_index + 50, y=lastLow, text='OB+', style=label.style_label_left, color=color.new(color.white, 100), textcolor=color.green, size=size.small)
+                array.push(longLines, newLine)
+                array.push(longLabels, newLabel)
+                lastLongIndex := bar_index
+
+// Update bullish order blocks
+if showOB and showOBOnCurrentTF and array.size(longLines) > 0
+    for i = (array.size(longLines) - 1) to 0
+        lline = array.get(longLines, i)
+        llabel = array.get(longLabels, i)
+        lstart = array.get(longLineStart, i)
+        lstate = array.get(longLineState, i)
+        lineY = line.get_y1(lline)
+
+        // Check if mitigated (price touched the line)
+        if (low <= lineY and high > lineY and bar_index > lstart and lstate == 0)
+            if useMitigatedBlocks
+                line.set_color(lline, mitigatedOBColour)
+                label.set_textcolor(llabel, mitigatedOBColour)
+            array.set(longLineState, i, 1)
+
+        // Remove if price closes below
+        if close < lineY
+            array.remove(longLineStart, i)
+            array.remove(longLineState, i)
+            array.remove(longLines, i)
+            array.remove(longLabels, i)
+            line.delete(lline)
+            label.delete(llabel)
+
+// Record last up and down candles for OB
+if close < open
+    lastDown := high
+    lastDownIndex := bar_index
+    lastLow := low
+
+if close > open
+    lastUp := close
+    lastUpIndex := bar_index
+    lastUpLow := low
+    lastHigh := high
+
+lastHigh := high > lastHigh ? high : lastHigh
+lastLow := low < lastLow ? low : lastLow
+
+// ===================== BREAKER BLOCKS =====================
+var GROUP_BB = 'Breaker Blocks'
+bbTimeframe = input.timeframe('240', 'Timeframe for Analysis (4H recommended)', group=GROUP_BB)
+bullishBBColour = input.color(color.new(#2196F3, 70), title='Bullish BB', group=GROUP_BB)
+bearishBBColour = input.color(color.new(#FF9800, 70), title='Bearish BB', group=GROUP_BB)
+
+bbTF = bbTimeframe == '' ? getCurrentTF() : bbTimeframe
+showBBOnCurrentTF = shouldShowOnCurrentTF(bbTF)
+
+// BB Variables - using lines and labels
+var breakerLines = array.new_line()
+var breakerLabels = array.new_label()
+var breakerTypes = array.new_int()
+var breakerStarts = array.new_int()
+var breakerPrices = array.new_float()
+
+// Detect Breaker Blocks
+if showBB and showBBOnCurrentTF and array.size(shortLines) > 0
+    for i = (array.size(shortLines) - 1) to 0
+        sline = array.get(shortLines, i)
+        lineY = line.get_y1(sline)
+        lineLeft = line.get_x1(sline)
+
+        if close > lineY and bar_index > lineLeft + 2
+            newBB = line.new(x1=lineLeft, y1=lineY, x2=bar_index + 50, y2=lineY, extend=extend.right, color=color.black, width=2, style=line.style_solid)
+            newLabel = label.new(x=bar_index + 50, y=lineY, text='BB+', style=label.style_label_left, color=color.new(color.white, 100), textcolor=color.green, size=size.small)
+            array.push(breakerLines, newBB)
+            array.push(breakerLabels, newLabel)
+            array.push(breakerTypes, 1)
+            array.push(breakerStarts, bar_index)
+            array.push(breakerPrices, lineY)
+
+if showBB and showBBOnCurrentTF and array.size(longLines) > 0
+    for i = (array.size(longLines) - 1) to 0
+        lline = array.get(longLines, i)
+        lineY = line.get_y1(lline)
+        lineLeft = line.get_x1(lline)
+
+        if close < lineY and bar_index > lineLeft + 2
+            newBB = line.new(x1=lineLeft, y1=lineY, x2=bar_index + 50, y2=lineY, extend=extend.right, color=color.black, width=2, style=line.style_solid)
+            newLabel = label.new(x=bar_index + 50, y=lineY, text='BB-', style=label.style_label_left, color=color.new(color.white, 100), textcolor=color.red, size=size.small)
+            array.push(breakerLines, newBB)
+            array.push(breakerLabels, newLabel)
+            array.push(breakerTypes, -1)
+            array.push(breakerStarts, bar_index)
+            array.push(breakerPrices, lineY)
+
+// Update and remove invalidated breaker blocks
+if showBB and showBBOnCurrentTF and array.size(breakerLines) > 0
+    for i = (array.size(breakerLines) - 1) to 0
+        bline = array.get(breakerLines, i)
+        blabel = array.get(breakerLabels, i)
+        btype = array.get(breakerTypes, i)
+        bprice = array.get(breakerPrices, i)
+
+        if btype == 1 and close < bprice
+            line.delete(bline)
+            label.delete(blabel)
+            array.remove(breakerLines, i)
+            array.remove(breakerLabels, i)
+            array.remove(breakerTypes, i)
+            array.remove(breakerStarts, i)
+            array.remove(breakerPrices, i)
+        else if btype == -1 and close > bprice
+            line.delete(bline)
+            label.delete(blabel)
+            array.remove(breakerLines, i)
+            array.remove(breakerLabels, i)
+            array.remove(breakerTypes, i)
+            array.remove(breakerStarts, i)
+            array.remove(breakerPrices, i)
+
+// ===================== PROPULSION BLOCKS =====================
+var GROUP_PB = 'Propulsion Blocks'
+pbTimeframe = input.timeframe('240', 'Timeframe for Analysis (4H recommended)', group=GROUP_PB)
+pbMultiplier = input.float(2.0, 'Propulsion Multiplier', minval=1.0, step=0.5, group=GROUP_PB, tooltip='Price must move this many times the OB size to become a PB')
+bullishPBColour = input.color(color.new(#089981, 60), title='Bullish PB', group=GROUP_PB)
+bearishPBColour = input.color(color.new(#F23645, 60), title='Bearish PB', group=GROUP_PB)
+
+pbTF = pbTimeframe == '' ? getCurrentTF() : pbTimeframe
+showPBOnCurrentTF = shouldShowOnCurrentTF(pbTF)
+
+// PB tracking arrays
+var propulsionLines = array.new_line()
+var propulsionLabels = array.new_label()
+var propulsionTypes = array.new_int()
+var propulsionPrices = array.new_float()
+
+// Check if existing OBs become Propulsion Blocks
+if showPB and showPBOnCurrentTF and array.size(longLines) > 0
+    for i = (array.size(longLines) - 1) to 0
+        lline = array.get(longLines, i)
+        llabel = array.get(longLabels, i)
+        lineY = line.get_y1(lline)
+        lineLeft = line.get_x1(lline)
+
+        if low <= lineY and high >= lineY and bar_index > lineLeft + 1
+            propulsionThreshold = lineY * (1 + (pbMultiplier / 100))
+            if high > propulsionThreshold
+                newPB = line.new(x1=lineLeft, y1=lineY, x2=bar_index + 50, y2=lineY, extend=extend.right, color=color.black, width=2, style=line.style_solid)
+                newLabel = label.new(x=bar_index + 50, y=lineY, text='PB+', style=label.style_label_left, color=color.new(color.white, 100), textcolor=color.green, size=size.small)
+                array.push(propulsionLines, newPB)
+                array.push(propulsionLabels, newLabel)
+                array.push(propulsionTypes, 1)
+                array.push(propulsionPrices, lineY)
+
+                line.delete(lline)
+                label.delete(llabel)
+                array.remove(longLines, i)
+                array.remove(longLabels, i)
+                array.remove(longLineStart, i)
+                array.remove(longLineState, i)
+
+if showPB and showPBOnCurrentTF and array.size(shortLines) > 0
+    for i = (array.size(shortLines) - 1) to 0
+        sline = array.get(shortLines, i)
+        slabel = array.get(shortLabels, i)
+        lineY = line.get_y1(sline)
+        lineLeft = line.get_x1(sline)
+
+        if low <= lineY and high >= lineY and bar_index > lineLeft + 1
+            propulsionThreshold = lineY * (1 - (pbMultiplier / 100))
+            if low < propulsionThreshold
+                newPB = line.new(x1=lineLeft, y1=lineY, x2=bar_index + 50, y2=lineY, extend=extend.right, color=color.black, width=2, style=line.style_solid)
+                newLabel = label.new(x=bar_index + 50, y=lineY, text='PB-', style=label.style_label_left, color=color.new(color.white, 100), textcolor=color.red, size=size.small)
+                array.push(propulsionLines, newPB)
+                array.push(propulsionLabels, newLabel)
+                array.push(propulsionTypes, -1)
+                array.push(propulsionPrices, lineY)
+
+                line.delete(sline)
+                label.delete(slabel)
+                array.remove(shortLines, i)
+                array.remove(shortLabels, i)
+                array.remove(shortLineStart, i)
+                array.remove(shortLineState, i)
+
+// Update and clean up old Propulsion Blocks
+if showPB and showPBOnCurrentTF and array.size(propulsionLines) > 0
+    for i = (array.size(propulsionLines) - 1) to 0
+        pline = array.get(propulsionLines, i)
+        plabel = array.get(propulsionLabels, i)
+        ptype = array.get(propulsionTypes, i)
+        pprice = array.get(propulsionPrices, i)
+
+        if ptype == 1 and close < pprice
+            line.delete(pline)
+            label.delete(plabel)
+            array.remove(propulsionLines, i)
+            array.remove(propulsionLabels, i)
+            array.remove(propulsionTypes, i)
+            array.remove(propulsionPrices, i)
+        else if ptype == -1 and close > pprice
+            line.delete(pline)
+            label.delete(plabel)
+            array.remove(propulsionLines, i)
+            array.remove(propulsionLabels, i)
+            array.remove(propulsionTypes, i)
+            array.remove(propulsionPrices, i)
+
+// ===================== FVG (Fair Value Gaps) =====================
+var GROUP_FVG = 'Fair Value Gaps'
+fvgTimeframe = input.timeframe('60', 'Timeframe for Analysis (1H recommended)', group=GROUP_FVG)
+fvgValidityPeriod = input.int(500, 'FVG Validity Period (Bars)', group=GROUP_FVG, maxval=4998, minval=10)
+fvgColor = input.color(color.new(#00BFFF, 80), 'FVG Color (Light Blue)', group=GROUP_FVG)
+
+fvgTF = fvgTimeframe == '' ? getCurrentTF() : fvgTimeframe
+showFVGOnCurrentTF = shouldShowOnCurrentTF(fvgTF)
+
+bullishFVG = close > open and close[1] > open[1] and high[2] < low[0]
+bearishFVG = close < open and close[1] < open[1] and low[2] > high[0]
+
+var array<box> fvgBoxes = array.new_box()
+var array<int> fvgBars = array.new_int()
+
+if showFVG and showFVGOnCurrentTF and bullishFVG
+    fvgBoxes.push(box.new(bar_index[2], low[0], bar_index, high[2], bgcolor=fvgColor, border_color=color.new(#00BFFF, 100)))
+    fvgBars.push(bar_index)
+
+if showFVG and showFVGOnCurrentTF and bearishFVG
+    fvgBoxes.push(box.new(bar_index[2], low[2], bar_index, high[0], bgcolor=fvgColor, border_color=color.new(#00BFFF, 100)))
+    fvgBars.push(bar_index)
+
+if fvgBoxes.size() > 0
+    for i = fvgBoxes.size() - 1 to 0
+        fvgBox = fvgBoxes.get(i)
+        fvgTop = box.get_top(fvgBox)
+        fvgBot = box.get_bottom(fvgBox)
+        if bar_index - fvgBars.get(i) > fvgValidityPeriod or (low <= fvgTop and high >= fvgBot)
+            box.delete(fvgBox)
+            fvgBoxes.remove(i)
+            fvgBars.remove(i)
+
+// ===================== MSS & BOS =====================
+var GROUP_MSS = 'Market Structure (MSS/BOS)'
+tfStructure = input.timeframe('240', 'Timeframe for Analysis (4H recommended)', group=GROUP_MSS)
+rlBars = input.int(2, 'Swing Bars', 1, group=GROUP_MSS)
+showBos = input.bool(true, 'Show BOS', group=GROUP_MSS)
+showMss = input.bool(true, 'Show MSS', group=GROUP_MSS)
+mssLineColor = input.color(color.black, 'MSS/BOS Line Color', group=GROUP_MSS)
+
+mssTF = tfStructure == '' ? getCurrentTF() : tfStructure
+showMSSOnCurrentTF = shouldShowOnCurrentTF(mssTF)
+
+type piv
+    float pp
+    int pi
+
+var piv pH = na
+var piv pL = na
+var piv nPh = na
+var piv nPl = na
+var float nPh1 = na
+var float nPl1 = na
+var array<line> structLines = array.new_line()
+var bool bull = false
+
+Fmtf() =>
+    phPs = ta.pivothigh(rlBars, rlBars)
+    plPs = ta.pivotlow(rlBars, rlBars)
+    int phBi = na
+    int plBi = na
+    if not na(phPs)
+        phBi := time[rlBars]
+    if not na(plPs)
+        plBi := time[rlBars]
+    [phPs, phBi, plPs, plBi]
+
+[phPs, phBi, plPs, plBi] = request.security(syminfo.tickerid, tfStructure == '' ? timeframe.period : tfStructure, Fmtf(), lookahead=barmerge.lookahead_on)
+
+if showMSS_BOS and showMSSOnCurrentTF and not na(phPs)
+    nPh := piv.new(phPs, phBi)
+    if na(pH)
+        pH := piv.new(phPs, phBi)
+
+if showMSS_BOS and showMSSOnCurrentTF and not na(plPs)
+    nPl := piv.new(plPs, plBi)
+    if na(pL)
+        pL := piv.new(plPs, plBi)
+
+var mssBullVar = false
+var mssBearVar = false
+
+[htfClose, htfTime] = request.security(syminfo.tickerid, tfStructure == '' ? timeframe.period : tfStructure, [close[1], time[1]], lookahead=barmerge.lookahead_on)
+highCond = bull ? high : htfClose
+timeHighCond = bull ? time : htfTime
+
+if showMSS_BOS and showMSSOnCurrentTF and (plPs > nPl1 and bull) or na(nPl1) or plPs < nPl1
+    nPl1 := plPs
+
+breakHighCond = not na(pH) and highCond > pH.pp
+
+FtfLimit(val) =>
+    timeframe.in_seconds() <= timeframe.in_seconds(val == '' ? timeframe.period : val)
+
+var tfL0 = FtfLimit(tfStructure)
+
+if showMSS_BOS and showMSSOnCurrentTF and breakHighCond
+    linCon = bull ? showBos : showMss
+    isBOS = bull
+    if bull
+        mssBullVar := false
+    else
+        mssBullVar := true
+    if tfL0 and linCon
+        newLine = line.new(pH.pi, pH.pp, timeHighCond, pH.pp, color=mssLineColor, xloc=xloc.bar_time, style=line.style_solid, width=2)
+        structLines.push(newLine)
+        labelText = isBOS ? 'BOS' : 'MSS'
+        midX = int((pH.pi + timeHighCond) / 2)
+        label.new(midX, pH.pp, labelText, xloc=xloc.bar_time, style=label.style_label_down, color=color.new(color.white, 100), textcolor=color.green, size=size.tiny, textalign=text.align_center)
+    bull := true
+    mssBearVar := false
+    pH := na
+    pL := na
+    if not na(nPl1) and not na(nPl)
+        pL := piv.new(nPl.pp, nPl.pi)
+
+lowCond = bull ? htfClose : low
+timeLowCond = bull ? htfTime : time
+
+if showMSS_BOS and showMSSOnCurrentTF and (phPs < nPh1 and not bull) or na(nPh1) or phPs > nPh1
+    nPh1 := phPs
+
+breakLowCond = not na(pL) and lowCond < pL.pp
+
+if showMSS_BOS and showMSSOnCurrentTF and breakLowCond
+    linCon = bull ? showMss : showBos
+    isBOS = not bull
+    if not bull
+        mssBearVar := false
+    else
+        mssBearVar := true
+    if tfL0 and linCon
+        newLine = line.new(pL.pi, pL.pp, timeLowCond, pL.pp, color=mssLineColor, xloc=xloc.bar_time, style=line.style_solid, width=2)
+        structLines.push(newLine)
+        labelText = isBOS ? 'BOS' : 'MSS'
+        midX = int((pL.pi + timeLowCond) / 2)
+        label.new(midX, pL.pp, labelText, xloc=xloc.bar_time, style=label.style_label_up, color=color.new(color.white, 100), textcolor=color.red, size=size.tiny, textalign=text.align_center)
+    bull := false
+    mssBullVar := false
+    pH := na
+    pL := na
+    if not na(nPh1) and not na(nPh)
+        pH := piv.new(nPh.pp, nPh.pi)
+
+// ===================== DISPLACEMENT =====================
+var GROUP_DISP = 'Displacement'
+dispTimeframe = input.timeframe('60', 'Timeframe for Analysis (1H recommended)', group=GROUP_DISP)
+require_fvg_disp = input.bool(false, 'Require FVG', group=GROUP_DISP)
+disp_type = input.string('Open to Close', 'Displacement Type', options=['Open to Close', 'High to Low'], group=GROUP_DISP)
+std_len = input.int(100, minval=1, title='Displacement Length', group=GROUP_DISP)
+std_x = input.int(4, minval=0, title='Displacement Strength', group=GROUP_DISP)
+disp_color = input.color(color.yellow, 'Bar Color', group=GROUP_DISP)
+
+dispTF = dispTimeframe == '' ? getCurrentTF() : dispTimeframe
+showDispOnCurrentTF = shouldShowOnCurrentTF(dispTF)
+
+candle_range = disp_type == 'Open to Close' ? math.abs(open - close) : high - low
+std = ta.stdev(candle_range, std_len) * std_x
+fvg_disp = close[1] > open[1] ? high[2] < low[0] : low[2] > high[0]
+displacement = require_fvg_disp ? candle_range[1] > std[1] and fvg_disp : candle_range > std
+
+barcolor(showDisplacement and showDispOnCurrentTF and displacement ? disp_color : na, offset=require_fvg_disp ? -1 : na)
+
+// ===================== MITIGATION BLOCKS =====================
+var GROUP_MB = 'Mitigation Blocks'
+mbTimeframe = input.timeframe('60', 'Timeframe for Analysis (1H recommended)', group=GROUP_MB)
+mbShowBull = input.bool(true, 'Show Bullish MB', group=GROUP_MB)
+mbShowBear = input.bool(true, 'Show Bearish MB', group=GROUP_MB)
+mbBullColor = input.color(color.new(color.green, 85), 'Bullish MB', group=GROUP_MB)
+mbBearColor = input.color(color.new(color.red, 85), 'Bearish MB', group=GROUP_MB)
+mbLookback = input.int(20, 'Lookback Period', group=GROUP_MB)
+
+mbTF = mbTimeframe == '' ? getCurrentTF() : mbTimeframe
+showMBOnCurrentTF = shouldShowOnCurrentTF(mbTF)
+
+var array<box> mbBullBoxes = array.new_box()
+var array<box> mbBearBoxes = array.new_box()
+
+if showMB and showMBOnCurrentTF and mbShowBull
+    bullishMB = close[1] > open[1] and low <= low[1] and close > low[1]
+    if bullishMB
+        mbBullBoxes.push(box.new(bar_index[1], high[1], bar_index, low[1], bgcolor=mbBullColor, border_color=color.new(color.green, 100)))
+        label.new(bar_index, low[1], 'MB+', style=label.style_label_up, color=color.new(color.white, 100), textcolor=color.green, size=size.tiny)
+
+if showMB and showMBOnCurrentTF and mbShowBear
+    bearishMB = close[1] < open[1] and high >= high[1] and close < high[1]
+    if bearishMB
+        mbBearBoxes.push(box.new(bar_index[1], high[1], bar_index, low[1], bgcolor=mbBearColor, border_color=color.new(color.red, 100)))
+        label.new(bar_index, high[1], 'MB-', style=label.style_label_down, color=color.new(color.white, 100), textcolor=color.red, size=size.tiny)
+
+if mbBullBoxes.size() > mbLookback
+    box.delete(mbBullBoxes.shift())
+
+if mbBearBoxes.size() > mbLookback
+    box.delete(mbBearBoxes.shift())
