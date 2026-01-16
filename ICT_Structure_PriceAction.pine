@@ -1,12 +1,13 @@
 //@version=6
 // Combined ICT Structure & Price Action Indicator
 // Optimized for white background, mobile-friendly
-// Includes: Order Blocks, FVG/IFVG, MSS/BOS, Displacement, Mitigation Blocks
+// Includes: Order Blocks, Breaker Blocks, FVG/IFVG, MSS/BOS, Displacement, Mitigation Blocks
 indicator('ICT Structure & Price Action [Combined]', overlay=true, max_bars_back=5000, max_boxes_count=500, max_labels_count=500, max_lines_count=500)
 
 // ===================== GLOBAL SETTINGS =====================
 var GROUP_GLOBAL = 'Global Settings'
 showOB = input.bool(true, 'Show Order Blocks', group=GROUP_GLOBAL)
+showBB = input.bool(true, 'Show Breaker Blocks', group=GROUP_GLOBAL)
 showFVG = input.bool(true, 'Show FVG/IFVG', group=GROUP_GLOBAL)
 showMSS_BOS = input.bool(true, 'Show MSS/BOS', group=GROUP_GLOBAL)
 showDisplacement = input.bool(true, 'Show Displacement', group=GROUP_GLOBAL)
@@ -14,29 +15,37 @@ showMB = input.bool(true, 'Show Mitigation Blocks', group=GROUP_GLOBAL)
 showAbbreviations = input.bool(true, 'Show Abbreviations (Top Right)', group=GROUP_GLOBAL)
 
 // ===================== HIGHER TIMEFRAME VISIBILITY CONTROL =====================
-// Returns true if current timeframe should display the HTF analysis
+// MTF Visibility Rules:
+// 1W findings = visible on W & D only
+// 1D findings = visible on D, 12H, 8H, 4H (1440 to 240 minutes)
+// 4H findings = visible on 4H to 30M (240 to 30 minutes)
+// 1H findings = visible on 1H to 5M (60 to 5 minutes)
+// 5M findings = visible on 5M to 1M (5 to 1 minutes)
+// 1M findings = visible on 5M & 1M only
+
 canShowWeekly() =>
     tf = timeframe.period
+    // Only W and D
     tf == 'W' or tf == 'D'
 
 canShowDaily() =>
     tfInMinutes = timeframe.in_seconds() / 60
-    // 1D down to 4H (1440, 720, 480, 360, 240)
+    // 1D down to 4H: 1440, 720, 480, 360, 240 (includes D, 12H, 8H, 4H)
     tfInMinutes <= 1440 and tfInMinutes >= 240
 
 canShow4H() =>
     tfInMinutes = timeframe.in_seconds() / 60
-    // 4H down to 30M (240, 180, 120, 60, 45, 30)
+    // 4H down to 30M: 240, 180, 120, 90, 60, 45, 30
     tfInMinutes <= 240 and tfInMinutes >= 30
 
 canShow1H() =>
     tfInMinutes = timeframe.in_seconds() / 60
-    // 1H down to 5M (60, 30, 15, 10, 5)
+    // 1H down to 5M: 60, 45, 30, 15, 10, 5
     tfInMinutes <= 60 and tfInMinutes >= 5
 
 canShow5M() =>
     tfInMinutes = timeframe.in_seconds() / 60
-    // 5M down to 1M (5, 3, 2, 1)
+    // 5M down to 1M: 5, 3, 2, 1
     tfInMinutes <= 5 and tfInMinutes >= 1
 
 canShow1M() =>
@@ -190,6 +199,77 @@ if close > open
 
 lastHigh := high > lastHigh ? high : lastHigh
 lastLow := low < lastLow ? low : lastLow
+
+// ===================== BREAKER BLOCKS =====================
+var GROUP_BB = 'Breaker Blocks'
+bbTimeframe = input.timeframe('240', 'Timeframe for Analysis (4H recommended)', group=GROUP_BB)
+bullishBBColour = input.color(color.new(#2196F3, 70), title='Bullish BB', group=GROUP_BB)
+bearishBBColour = input.color(color.new(#FF9800, 70), title='Bearish BB', group=GROUP_BB)
+
+// Determine if BB should display
+bbTF = bbTimeframe == '' ? getCurrentTF() : bbTimeframe
+showBBOnCurrentTF = shouldShowOnCurrentTF(bbTF)
+
+// BB Variables
+var breakerBoxes = array.new_box()
+var breakerTypes = array.new_int()  // 1 = bullish, -1 = bearish
+var breakerStarts = array.new_int()
+
+// Detect Breaker Blocks (OB that got broken becomes BB)
+// Bullish Breaker: Former bearish OB that price broke above
+if showBB and showBBOnCurrentTF and array.size(shortBoxes) > 0
+    for i = (array.size(shortBoxes) - 1) to 0
+        sbox = array.get(shortBoxes, i)
+        top = box.get_top(sbox)
+        bottom = box.get_bottom(sbox)
+        boxLeft = box.get_left(sbox)
+
+        // If price closes above former bearish OB, it becomes a bullish breaker
+        if close > top and bar_index > boxLeft + 2
+            // Create breaker block
+            newBB = box.new(left=boxLeft, top=top, bottom=bottom, right=bar_index, bgcolor=bullishBBColour, border_color=color.new(#2196F3, 100))
+            array.push(breakerBoxes, newBB)
+            array.push(breakerTypes, 1)
+            array.push(breakerStarts, bar_index)
+            label.new(bar_index, top, 'BB+', style=label.style_label_down, color=color.new(color.white, 100), textcolor=#2196F3, size=size.tiny)
+
+// Bearish Breaker: Former bullish OB that price broke below
+if showBB and showBBOnCurrentTF and array.size(longBoxes) > 0
+    for i = (array.size(longBoxes) - 1) to 0
+        lbox = array.get(longBoxes, i)
+        top = box.get_top(lbox)
+        bottom = box.get_bottom(lbox)
+        boxLeft = box.get_left(lbox)
+
+        // If price closes below former bullish OB, it becomes a bearish breaker
+        if close < bottom and bar_index > boxLeft + 2
+            // Create breaker block
+            newBB = box.new(left=boxLeft, top=top, bottom=bottom, right=bar_index, bgcolor=bearishBBColour, border_color=color.new(#FF9800, 100))
+            array.push(breakerBoxes, newBB)
+            array.push(breakerTypes, -1)
+            array.push(breakerStarts, bar_index)
+            label.new(bar_index, bottom, 'BB-', style=label.style_label_up, color=color.new(color.white, 100), textcolor=#FF9800, size=size.tiny)
+
+// Update and remove invalidated breaker blocks
+if showBB and showBBOnCurrentTF and array.size(breakerBoxes) > 0
+    for i = (array.size(breakerBoxes) - 1) to 0
+        bbox = array.get(breakerBoxes, i)
+        btype = array.get(breakerTypes, i)
+        top = box.get_top(bbox)
+        bottom = box.get_bottom(bbox)
+
+        // Bullish breaker invalidated if price closes below it
+        if btype == 1 and close < bottom
+            box.delete(bbox)
+            array.remove(breakerBoxes, i)
+            array.remove(breakerTypes, i)
+            array.remove(breakerStarts, i)
+        // Bearish breaker invalidated if price closes above it
+        else if btype == -1 and close > top
+            box.delete(bbox)
+            array.remove(breakerBoxes, i)
+            array.remove(breakerTypes, i)
+            array.remove(breakerStarts, i)
 
 // ===================== FVG (Fair Value Gaps) =====================
 var GROUP_FVG = 'Fair Value Gaps'
@@ -404,6 +484,9 @@ if showAbbreviations and barstate.islast
     row = 0
     if showOB and showOBOnCurrentTF and (array.size(longBoxes) > 0 or array.size(shortBoxes) > 0)
         table.cell(abbrevTable, 0, row, 'OB', text_color=color.black, text_size=size.small)
+        row += 1
+    if showBB and showBBOnCurrentTF and array.size(breakerBoxes) > 0
+        table.cell(abbrevTable, 0, row, 'BB', text_color=color.black, text_size=size.small)
         row += 1
     if showFVG and showFVGOnCurrentTF and fvgBoxes.size() > 0
         table.cell(abbrevTable, 0, row, 'FVG', text_color=color.black, text_size=size.small)
