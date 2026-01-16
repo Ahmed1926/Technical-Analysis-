@@ -1,23 +1,52 @@
 //@version=5
 // Combined ICT Structure & Price Action Indicator
+// Optimized for white background, mobile-friendly
 // Includes: Order Blocks, FVG/IFVG, MSS/BOS, Displacement, Mitigation Blocks
 indicator('ICT Structure & Price Action [Combined]', overlay=true, max_bars_back=5000, max_boxes_count=500, max_labels_count=500, max_lines_count=500)
 
 // ===================== GLOBAL SETTINGS =====================
 var GROUP_GLOBAL = 'Global Settings'
 showOB = input.bool(true, 'Show Order Blocks', group=GROUP_GLOBAL)
-showFVG = input.bool(true, 'Show FVG', group=GROUP_GLOBAL)
+showFVG = input.bool(true, 'Show FVG/IFVG', group=GROUP_GLOBAL)
 showMSS_BOS = input.bool(true, 'Show MSS/BOS', group=GROUP_GLOBAL)
 showDisplacement = input.bool(true, 'Show Displacement', group=GROUP_GLOBAL)
 showMB = input.bool(true, 'Show Mitigation Blocks', group=GROUP_GLOBAL)
+showAbbreviations = input.bool(true, 'Show Abbreviations (Top Right)', group=GROUP_GLOBAL)
+
+// ===================== HIGHER TIMEFRAME VISIBILITY HELPER =====================
+// Returns true if current timeframe should display the HTF analysis
+canShowWeekly() =>
+    tf = timeframe.period
+    tf == 'W' or tf == 'D'
+
+canShowDaily() =>
+    tfInMinutes = timeframe.in_seconds() / 60
+    tfInMinutes <= 1440 and tfInMinutes >= 240  // 1D down to 4H
+
+canShow4H() =>
+    tfInMinutes = timeframe.in_seconds() / 60
+    tfInMinutes <= 240 and tfInMinutes >= 30  // 4H down to 30M
+
+canShow1H() =>
+    tfInMinutes = timeframe.in_seconds() / 60
+    tfInMinutes <= 60 and tfInMinutes >= 5  // 1H down to 5M
+
+canShow5M() =>
+    tfInMinutes = timeframe.in_seconds() / 60
+    tfInMinutes <= 5 and tfInMinutes >= 1  // 5M down to 1M
+
+canShow1M() =>
+    tfInMinutes = timeframe.in_seconds() / 60
+    tfInMinutes == 5 or tfInMinutes == 1  // Only 5M and 1M
 
 // ===================== ORDER BLOCKS =====================
 var GROUP_OB = 'Order Blocks'
-inputRange = input.int(25, 'Candle Range', minval=5, maxval=100, step=1, group=GROUP_OB)
-useMitigatedBlocks = input.bool(false, 'Show Mitigated Blocks', group=GROUP_OB)
-bearishOBColour = input.color(color.new(#DAA632, 80), title='Bearish OB', group=GROUP_OB)
-bullishOBColour = input.color(color.new(#C0E6AE, 60), title='Bullish OB', group=GROUP_OB)
-mitigatedOBColour = input.color(color.new(#CFCBCA, 80), title='Mitigated OB', group=GROUP_OB)
+obRange = input.int(30, 'Candle Range', minval=5, maxval=100, step=1, group=GROUP_OB)
+useMitigatedBlocks = input.bool(true, 'Show Mitigated Blocks', group=GROUP_OB)
+// Colors optimized for white background
+bearishOBColour = input.color(color.new(color.red, 70), title='Bearish OB', group=GROUP_OB)
+bullishOBColour = input.color(color.new(color.green, 70), title='Bullish OB', group=GROUP_OB)
+mitigatedOBColour = input.color(color.new(#808080, 85), title='Mitigated OB', group=GROUP_OB)
 
 // OB Variables
 var longBoxes = array.new_box()
@@ -38,7 +67,7 @@ var int lastLongIndex = 0
 var int lastShortIndex = 0
 
 structureLowIndexPointer(len) =>
-    float minValue = ta.highest(high, inputRange)[1]
+    float minValue = ta.highest(high, obRange)[1]
     int minIndex = bar_index
     for i = 1 to len
         if low[i] < minValue
@@ -46,15 +75,18 @@ structureLowIndexPointer(len) =>
             minIndex := bar_index[i]
     minIndex
 
-float structureLow = ta.lowest(low, inputRange)[1]
-int structureLowIndex = structureLowIndexPointer(inputRange)
+float structureLow = ta.lowest(low, obRange)[1]
+int structureLowIndex = structureLowIndexPointer(obRange)
 
 // Bearish break of structure
 if showOB and ta.crossunder(close, structureLow)
     if (bar_index - lastUpIndex) < 1000
         array.push(shortBoxStart, bar_index)
         array.push(shortBoxState, 0)
-        array.push(shortBoxes, box.new(left=lastUpIndex, top=lastHigh, bottom=lastUpLow, right=lastUpIndex, bgcolor=bearishOBColour, border_color=color.new(#CFCBCA, 100), extend=extend.right))
+        newBox = box.new(left=lastUpIndex, top=lastHigh, bottom=lastUpLow, right=bar_index, bgcolor=bearishOBColour, border_color=color.new(color.red, 100))
+        array.push(shortBoxes, newBox)
+        // Add label OB-
+        label.new(bar_index, lastHigh, 'OB-', style=label.style_label_down, color=color.new(color.white, 100), textcolor=color.red, size=size.tiny, textalign=text.align_center)
         lastShortIndex := lastUpIndex
 
 // Bullish break of structure
@@ -77,7 +109,10 @@ if showOB and array.size(shortBoxes) > 0
             if (bar_index - lastDownIndex) < 1000 and bar_index > lastLongIndex
                 array.push(longBoxStart, bar_index + 1)
                 array.push(longBoxState, 0)
-                array.push(longBoxes, box.new(left=lastDownIndex, top=lastDown, bottom=lastLow, right=lastDownIndex, bgcolor=bullishOBColour, border_color=color.new(#CFCBCA, 100), extend=extend.right))
+                newBox = box.new(left=lastDownIndex, top=lastDown, bottom=lastLow, right=bar_index, bgcolor=bullishOBColour, border_color=color.new(color.green, 100))
+                array.push(longBoxes, newBox)
+                // Add label OB+
+                label.new(bar_index, lastLow, 'OB+', style=label.style_label_up, color=color.new(color.white, 100), textcolor=color.green, size=size.tiny, textalign=text.align_center)
                 lastLongIndex := bar_index
 
 // Update bullish order blocks
@@ -115,44 +150,39 @@ lastLow := low < lastLow ? low : lastLow
 
 // ===================== FVG (Fair Value Gaps) =====================
 var GROUP_FVG = 'Fair Value Gaps'
-showBullFVG = input.bool(true, 'Show Bullish FVG', group=GROUP_FVG)
-showBearFVG = input.bool(true, 'Show Bearish FVG', group=GROUP_FVG)
-fvgBullColor = input.color(color.new(#4CAF4F, 65), 'Bullish FVG', group=GROUP_FVG)
-fvgBearColor = input.color(color.new(#FF5252, 65), 'Bearish FVG', group=GROUP_FVG)
 fvgValidityPeriod = input.int(500, 'FVG Validity Period (Bars)', group=GROUP_FVG, maxval=4998, minval=10)
+// Light blue with 20% opacity for BOTH bullish and bearish
+fvgColor = input.color(color.new(#00BFFF, 80), 'FVG Color (Light Blue)', group=GROUP_FVG)
 
 // FVG Detection
 bullishFVG = close > open and close[1] > open[1] and high[2] < low[0]
 bearishFVG = close < open and close[1] < open[1] and low[2] > high[0]
 
-var array<box> fvgBullBoxes = array.new_box()
-var array<box> fvgBearBoxes = array.new_box()
-var array<int> fvgBullBars = array.new_int()
-var array<int> fvgBearBars = array.new_int()
+var array<box> fvgBoxes = array.new_box()
+var array<int> fvgBars = array.new_int()
 
-// Create FVG boxes
-if showFVG and showBullFVG and bullishFVG
-    fvgBullBoxes.push(box.new(bar_index[2], low[0], bar_index, high[2], bgcolor=fvgBullColor, border_color=color.new(#4CAF4F, 100), extend=extend.right))
-    fvgBullBars.push(bar_index)
+// Create FVG boxes - NO labels, borders, middle lines, or text - just clean filled boxes
+if showFVG and bullishFVG
+    // Proximal mitigation level (use the closer level)
+    fvgBoxes.push(box.new(bar_index[2], low[0], bar_index, high[2], bgcolor=fvgColor, border_color=color.new(#00BFFF, 100)))
+    fvgBars.push(bar_index)
 
-if showFVG and showBearFVG and bearishFVG
-    fvgBearBoxes.push(box.new(bar_index[2], low[2], bar_index, high[0], bgcolor=fvgBearColor, border_color=color.new(#FF5252, 100), extend=extend.right))
-    fvgBearBars.push(bar_index)
+if showFVG and bearishFVG
+    // Proximal mitigation level (use the closer level)
+    fvgBoxes.push(box.new(bar_index[2], low[2], bar_index, high[0], bgcolor=fvgColor, border_color=color.new(#00BFFF, 100)))
+    fvgBars.push(bar_index)
 
 // Remove old FVG boxes
-if fvgBullBoxes.size() > 0
-    for i = fvgBullBoxes.size() - 1 to 0
-        if bar_index - fvgBullBars.get(i) > fvgValidityPeriod or close < box.get_bottom(fvgBullBoxes.get(i))
-            box.delete(fvgBullBoxes.get(i))
-            fvgBullBoxes.remove(i)
-            fvgBullBars.remove(i)
-
-if fvgBearBoxes.size() > 0
-    for i = fvgBearBoxes.size() - 1 to 0
-        if bar_index - fvgBearBars.get(i) > fvgValidityPeriod or close > box.get_top(fvgBearBoxes.get(i))
-            box.delete(fvgBearBoxes.get(i))
-            fvgBearBoxes.remove(i)
-            fvgBearBars.remove(i)
+if fvgBoxes.size() > 0
+    for i = fvgBoxes.size() - 1 to 0
+        fvgBox = fvgBoxes.get(i)
+        fvgTop = box.get_top(fvgBox)
+        fvgBot = box.get_bottom(fvgBox)
+        // Remove if validity period expired or price mitigated (proximal level)
+        if bar_index - fvgBars.get(i) > fvgValidityPeriod or (low <= fvgTop and high >= fvgBot)
+            box.delete(fvgBox)
+            fvgBoxes.remove(i)
+            fvgBars.remove(i)
 
 // ===================== MSS & BOS =====================
 var GROUP_MSS = 'Market Structure (MSS/BOS)'
@@ -160,10 +190,8 @@ tfStructure = input.timeframe('', 'Timeframe', group=GROUP_MSS)
 rlBars = input.int(2, 'Swing Bars', 1, group=GROUP_MSS)
 showBos = input.bool(true, 'Show BOS', group=GROUP_MSS)
 showMss = input.bool(true, 'Show MSS', group=GROUP_MSS)
-bosBullCol = input.color(#008080, 'BOS Bullish', group=GROUP_MSS)
-bosBearCol = input.color(#FF0000, 'BOS Bearish', group=GROUP_MSS)
-mssBullCol = input.color(#008080, 'MSS Bullish', group=GROUP_MSS)
-mssBearCol = input.color(#FF0000, 'MSS Bearish', group=GROUP_MSS)
+// Dark gray for white background visibility
+mssLineColor = input.color(color.new(#404040, 0), 'MSS/BOS Line Color (Dark Gray)', group=GROUP_MSS)
 
 type piv
     float pp
@@ -175,7 +203,7 @@ var piv nPh = na
 var piv nPl = na
 var float nPh1 = na
 var float nPl1 = na
-var lin = array.new_line()
+var array<line> structLines = array.new_line()
 var bool bull = false
 
 Fmtf() =>
@@ -220,13 +248,19 @@ var tfL0 = FtfLimit(tfStructure)
 
 if showMSS_BOS and breakHighCond
     linCon = bull ? showBos : showMss
-    linCol = bull ? bosBullCol : mssBullCol
+    isBOS = bull
     if bull
         mssBullVar := false
     else
         mssBullVar := true
     if tfL0 and linCon
-        line.new(pH.pi, pH.pp, timeHighCond, pH.pp, color=linCol, xloc=xloc.bar_time, style=bull ? line.style_dotted : line.style_solid, width=2)
+        // Solid line style, dark gray
+        newLine = line.new(pH.pi, pH.pp, timeHighCond, pH.pp, color=mssLineColor, xloc=xloc.bar_time, style=line.style_solid, width=2)
+        structLines.push(newLine)
+        // Label at middle-top of line, green text, bold, small size
+        labelText = isBOS ? 'BOS' : 'MSS'
+        midX = int((pH.pi + timeHighCond) / 2)
+        label.new(midX, pH.pp, labelText, xloc=xloc.bar_time, style=label.style_label_down, color=color.new(color.white, 100), textcolor=color.green, size=size.tiny, textalign=text.align_center)
     bull := true
     mssBearVar := false
     pH := na
@@ -244,13 +278,19 @@ breakLowCond = not na(pL) and lowCond < pL.pp
 
 if showMSS_BOS and breakLowCond
     linCon = bull ? showMss : showBos
-    linCol = bull ? mssBearCol : bosBearCol
+    isBOS = not bull
     if not bull
         mssBearVar := false
     else
         mssBearVar := true
     if tfL0 and linCon
-        line.new(pL.pi, pL.pp, timeLowCond, pL.pp, color=linCol, xloc=xloc.bar_time, style=bull ? line.style_solid : line.style_dotted, width=2)
+        // Solid line style, dark gray
+        newLine = line.new(pL.pi, pL.pp, timeLowCond, pL.pp, color=mssLineColor, xloc=xloc.bar_time, style=line.style_solid, width=2)
+        structLines.push(newLine)
+        // Label at middle-top of line, red text, bold, small size
+        labelText = isBOS ? 'BOS' : 'MSS'
+        midX = int((pL.pi + timeLowCond) / 2)
+        label.new(midX, pL.pp, labelText, xloc=xloc.bar_time, style=label.style_label_up, color=color.new(color.white, 100), textcolor=color.red, size=size.tiny, textalign=text.align_center)
     bull := false
     mssBullVar := false
     pH := na
@@ -260,40 +300,42 @@ if showMSS_BOS and breakLowCond
 
 // ===================== DISPLACEMENT =====================
 var GROUP_DISP = 'Displacement'
-require_fvg = input.bool(true, 'Require FVG', group=GROUP_DISP)
+require_fvg_disp = input.bool(false, 'Require FVG', group=GROUP_DISP)  // Set to false as per requirements
 disp_type = input.string('Open to Close', 'Displacement Type', options=['Open to Close', 'High to Low'], group=GROUP_DISP)
 std_len = input.int(100, minval=1, title='Displacement Length', group=GROUP_DISP)
-std_x = input.int(4, minval=0, title='Displacement Strength', group=GROUP_DISP)
+std_x = input.int(4, minval=0, title='Displacement Strength', group=GROUP_DISP)  // Keep at 4 (default)
 disp_color = input.color(color.yellow, 'Bar Color', group=GROUP_DISP)
 
 candle_range = disp_type == 'Open to Close' ? math.abs(open - close) : high - low
 std = ta.stdev(candle_range, std_len) * std_x
-fvg = close[1] > open[1] ? high[2] < low[0] : low[2] > high[0]
-displacement = require_fvg ? candle_range[1] > std[1] and fvg : candle_range > std
+fvg_disp = close[1] > open[1] ? high[2] < low[0] : low[2] > high[0]
+displacement = require_fvg_disp ? candle_range[1] > std[1] and fvg_disp : candle_range > std
 
-barcolor(showDisplacement and displacement ? disp_color : na, offset=require_fvg ? -1 : na)
+barcolor(showDisplacement and displacement ? disp_color : na, offset=require_fvg_disp ? -1 : na)
 
 // ===================== MITIGATION BLOCKS =====================
 var GROUP_MB = 'Mitigation Blocks'
 mbShowBull = input.bool(true, 'Show Bullish MB', group=GROUP_MB)
 mbShowBear = input.bool(true, 'Show Bearish MB', group=GROUP_MB)
-mbBullColor = input.color(color.new(#00FF00, 85), 'Bullish MB', group=GROUP_MB)
-mbBearColor = input.color(color.new(#FF0000, 85), 'Bearish MB', group=GROUP_MB)
+mbBullColor = input.color(color.new(color.green, 85), 'Bullish MB', group=GROUP_MB)
+mbBearColor = input.color(color.new(color.red, 85), 'Bearish MB', group=GROUP_MB)
 mbLookback = input.int(20, 'Lookback Period', group=GROUP_MB)
 
 var array<box> mbBullBoxes = array.new_box()
 var array<box> mbBearBoxes = array.new_box()
 
-// Detect mitigation blocks (Order blocks that have been tested and held)
+// Detect mitigation blocks
 if showMB and mbShowBull
     bullishMB = close[1] > open[1] and low <= low[1] and close > low[1]
     if bullishMB
-        mbBullBoxes.push(box.new(bar_index[1], high[1], bar_index, low[1], bgcolor=mbBullColor, border_color=color.new(#00FF00, 100)))
+        mbBullBoxes.push(box.new(bar_index[1], high[1], bar_index, low[1], bgcolor=mbBullColor, border_color=color.new(color.green, 100)))
+        label.new(bar_index, low[1], 'MB+', style=label.style_label_up, color=color.new(color.white, 100), textcolor=color.green, size=size.tiny)
 
 if showMB and mbShowBear
     bearishMB = close[1] < open[1] and high >= high[1] and close < high[1]
     if bearishMB
-        mbBearBoxes.push(box.new(bar_index[1], high[1], bar_index, low[1], bgcolor=mbBearColor, border_color=color.new(#FF0000, 100)))
+        mbBearBoxes.push(box.new(bar_index[1], high[1], bar_index, low[1], bgcolor=mbBearColor, border_color=color.new(color.red, 100)))
+        label.new(bar_index, high[1], 'MB-', style=label.style_label_down, color=color.new(color.white, 100), textcolor=color.red, size=size.tiny)
 
 // Remove old MB boxes
 if mbBullBoxes.size() > mbLookback
@@ -302,3 +344,23 @@ if mbBullBoxes.size() > mbLookback
 if mbBearBoxes.size() > mbLookback
     box.delete(mbBearBoxes.shift())
 
+// ===================== ABBREVIATIONS TABLE (Top Right) =====================
+var table abbrevTable = table.new(position.top_right, 1, 10, bgcolor=color.new(color.white, 85), frame_color=color.new(color.black, 50), frame_width=1, border_width=1)
+
+if showAbbreviations and barstate.islast
+    row = 0
+    if showOB and (array.size(longBoxes) > 0 or array.size(shortBoxes) > 0)
+        table.cell(abbrevTable, 0, row, 'OB', text_color=color.black, text_size=size.small)
+        row += 1
+    if showFVG and fvgBoxes.size() > 0
+        table.cell(abbrevTable, 0, row, 'FVG', text_color=color.black, text_size=size.small)
+        row += 1
+    if showMSS_BOS and structLines.size() > 0
+        table.cell(abbrevTable, 0, row, 'MSS/BOS', text_color=color.black, text_size=size.small)
+        row += 1
+    if showDisplacement and displacement
+        table.cell(abbrevTable, 0, row, 'DISP', text_color=color.black, text_size=size.small)
+        row += 1
+    if showMB and (mbBullBoxes.size() > 0 or mbBearBoxes.size() > 0)
+        table.cell(abbrevTable, 0, row, 'MB', text_color=color.black, text_size=size.small)
+        row += 1
