@@ -104,14 +104,14 @@ if showBSL_SSL and showBSLOnCurrentTF
         bslLevel := high
         line.delete(bslLine)
         label.delete(bslLabel)
-        bslLine := line.new(bar_index, bslLevel, bar_index + 1, bslLevel, extend=extend.right, color=bslColor, width=2, style=line.style_stepline)
+        bslLine := line.new(bar_index, bslLevel, bar_index + 1, bslLevel, extend=extend.right, color=bslColor, width=2, style=line.style_solid)
         bslLabel := label.new(x=bar_index, y=bslLevel, text='BSL', style=label.style_label_down, color=color.new(color.white, 100), textcolor=bslColor, size=size.tiny)
 
     if sslBreak
         sslLevel := low
         line.delete(sslLine)
         label.delete(sslLabel)
-        sslLine := line.new(bar_index, sslLevel, bar_index + 1, sslLevel, extend=extend.right, color=sslColor, width=2, style=line.style_stepline)
+        sslLine := line.new(bar_index, sslLevel, bar_index + 1, sslLevel, extend=extend.right, color=sslColor, width=2, style=line.style_solid)
         sslLabel := label.new(x=bar_index, y=sslLevel, text='SSL', style=label.style_label_up, color=color.new(color.white, 100), textcolor=sslColor, size=size.tiny)
 
 // ===================== EQUAL HIGHS & LOWS =====================
