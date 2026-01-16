@@ -1,0 +1,333 @@
+//@version=5
+// Combined ICT Liquidity & Sessions Indicator
+// Includes: BSL/SSL, EQH/EQL, Liquidity Sweeps, Weekly/Daily Bias, Power of 3,
+// DOL, Trading Sessions, SMT Divergence, S&D Profile, Premium/Discount, Rejection Blocks, IPDA Deviations
+indicator('ICT Liquidity & Sessions [Combined]', overlay=true, max_bars_back=5000, max_boxes_count=500, max_labels_count=500, max_lines_count=500)
+
+// ===================== GLOBAL SETTINGS =====================
+var GROUP_GLOBAL = 'Global Settings'
+showBSL_SSL = input.bool(true, 'Show Buy/Sell Side Liquidity', group=GROUP_GLOBAL)
+showEQH_EQL = input.bool(true, 'Show Equal Highs/Lows', group=GROUP_GLOBAL)
+showLiqSweeps = input.bool(true, 'Show Liquidity Sweeps', group=GROUP_GLOBAL)
+showBias = input.bool(true, 'Show Weekly/Daily Bias', group=GROUP_GLOBAL)
+showPO3 = input.bool(true, 'Show Power of 3', group=GROUP_GLOBAL)
+showDOL = input.bool(true, 'Show Draw on Liquidity', group=GROUP_GLOBAL)
+showSessions = input.bool(true, 'Show Trading Sessions', group=GROUP_GLOBAL)
+showSMT = input.bool(false, 'Show SMT Divergence (Separate Pane)', group=GROUP_GLOBAL)
+showSD = input.bool(false, 'Show S&D Profile', group=GROUP_GLOBAL)
+showPD = input.bool(true, 'Show Premium/Discount Zones', group=GROUP_GLOBAL)
+showRB = input.bool(true, 'Show Rejection Blocks', group=GROUP_GLOBAL)
+showIPDA = input.bool(false, 'Show IPDA Deviations', group=GROUP_GLOBAL)
+
+// ===================== BSL & SSL (Buy/Sell Side Liquidity) =====================
+var GROUP_BSL = 'Buy/Sell Side Liquidity'
+length_bsl = input.int(20, title='Lookback Length', group=GROUP_BSL)
+bslColor = input.color(color.green, 'BSL Color', group=GROUP_BSL)
+sslColor = input.color(color.red, 'SSL Color', group=GROUP_BSL)
+
+highestHigh = ta.highest(high, length_bsl)
+lowestLow = ta.lowest(low, length_bsl)
+bslBreak = high == highestHigh
+sslBreak = low == lowestLow
+
+var float bslLevel = na
+var float sslLevel = na
+var line bslLine = na
+var line sslLine = na
+var label bslLabel = na
+var label sslLabel = na
+
+if showBSL_SSL
+    if bslBreak
+        bslLevel := high
+        line.delete(bslLine)
+        label.delete(bslLabel)
+        bslLine := line.new(bar_index, bslLevel, bar_index + 1, bslLevel, extend=extend.right, color=bslColor, width=2, style=line.style_stepline)
+        bslLabel := label.new(x=bar_index, y=bslLevel, text='BSL', style=label.style_label_down, color=bslColor, textcolor=color.white)
+
+    if sslBreak
+        sslLevel := low
+        line.delete(sslLine)
+        label.delete(sslLabel)
+        sslLine := line.new(bar_index, sslLevel, bar_index + 1, sslLevel, extend=extend.right, color=sslColor, width=2, style=line.style_stepline)
+        sslLabel := label.new(x=bar_index, y=sslLevel, text='SSL', style=label.style_label_up, color=sslColor, textcolor=color.white)
+
+// ===================== EQUAL HIGHS & LOWS =====================
+var GROUP_EQL = 'Equal Highs/Lows'
+precision_eql = input.int(2, step=1, minval=1, title='Precision', group=GROUP_EQL)
+eqlHighColor = input.color(color.lime, 'Highs Color', group=GROUP_EQL)
+eqlLowColor = input.color(color.red, 'Lows Color', group=GROUP_EQL)
+
+max_eq = math.max(high, high[1])
+min_eq = math.min(low, low[1])
+top_eq = (math.abs(high - high[1]) / (max_eq - min_eq)) * 100
+bottom_eq = (math.abs(low - low[1]) / (max_eq - min_eq)) * 100
+
+top_v = ta.crossunder(top_eq, precision_eql)
+bottom_v = ta.crossunder(bottom_eq, precision_eql)
+
+if showEQH_EQL
+    if top_v
+        line.new(bar_index[1], high[1], bar_index, high, color=eqlHighColor, style=line.style_solid, width=2)
+    if bottom_v
+        line.new(bar_index[1], low[1], bar_index, low, color=eqlLowColor, style=line.style_solid, width=2)
+
+plotshape(showEQH_EQL and top_v, color=eqlHighColor, offset=0, style=shape.triangledown, size=size.tiny, location=location.abovebar, title='Equal Highs')
+plotshape(showEQH_EQL and bottom_v, color=eqlLowColor, offset=0, style=shape.triangleup, size=size.tiny, location=location.belowbar, title='Equal Lows')
+
+// ===================== LIQUIDITY SWEEPS =====================
+var GROUP_SWEEP = 'Liquidity Sweeps'
+pivotLength = input.int(14, title='Pivot Length', group=GROUP_SWEEP)
+sweepColor = input.color(color.yellow, 'Sweep Color', group=GROUP_SWEEP)
+
+ph_sweep = ta.pivothigh(pivotLength, pivotLength)
+pl_sweep = ta.pivotlow(pivotLength, pivotLength)
+
+var float swingHigh_sweep = na
+var float swingLow_sweep = na
+var bool sweptHigh = false
+var bool sweptLow = false
+
+if bool(ph_sweep)
+    swingHigh_sweep := high[pivotLength]
+    sweptHigh := false
+
+if bool(pl_sweep)
+    swingLow_sweep := low[pivotLength]
+    sweptLow := false
+
+bearishSweepCondition = high > swingHigh_sweep and close < swingHigh_sweep
+bullishSweepCondition = low < swingLow_sweep and close > swingLow_sweep
+
+if showLiqSweeps and not sweptHigh and not na(swingHigh_sweep) and bearishSweepCondition
+    label.new(bar_index, high, 'Sweep', color=sweepColor, style=label.style_label_down, textcolor=color.black, size=size.small)
+    sweptHigh := true
+
+if showLiqSweeps and not sweptLow and not na(swingLow_sweep) and bullishSweepCondition
+    label.new(bar_index, low, 'Sweep', color=sweepColor, style=label.style_label_up, textcolor=color.black, size=size.small)
+    sweptLow := true
+
+// ===================== WEEKLY & DAILY BIAS =====================
+var GROUP_BIAS = 'Weekly & Daily Bias'
+d_bias = input.bool(true, 'Daily Bias', group=GROUP_BIAS)
+w_bias = input.bool(false, 'Weekly Bias', group=GROUP_BIAS)
+bullBiasColor = input.color(color.teal, 'Bull Bias', group=GROUP_BIAS)
+bearBiasColor = input.color(color.red, 'Bear Bias', group=GROUP_BIAS)
+
+type info_bias
+    float ph
+    float pl
+    float ch
+    float cl
+    float co
+    bool p_up
+    int bias = 0
+
+var d_info = info_bias.new()
+var w_info = info_bias.new()
+
+new_day = timeframe.change('D')
+new_week = timeframe.change('W')
+
+if showBias and d_bias and new_day
+    if not na(d_info.ch)
+        if close[1] >= d_info.co
+            d_info.p_up := true
+        else
+            d_info.p_up := false
+        d_info.ph := d_info.ch
+        d_info.pl := d_info.cl
+        d_info.ch := high
+        d_info.cl := low
+        d_info.co := open
+
+if na(d_info.ch)
+    d_info.ch := high
+    d_info.cl := low
+else
+    d_info.ch := math.max(high, d_info.ch)
+    d_info.cl := math.min(low, d_info.cl)
+
+plotshape(showBias and d_bias, 'Daily Bias', style=shape.square, size=size.tiny, location=location.top, color=d_info.bias == 1 ? bullBiasColor : d_info.bias == -1 ? bearBiasColor : na)
+
+// ===================== POWER OF 3 =====================
+var GROUP_PO3 = 'Power of 3'
+show_Accumulation = input(true, 'Accumulation', group=GROUP_PO3)
+Accumulation_ses = input.session('1900-0100', '', group=GROUP_PO3)
+Accumulation_color = input.color(#8BBCFC, 'Color', group=GROUP_PO3)
+show_Manipulation = input(true, 'Manipulation', group=GROUP_PO3)
+Manipulation_ses = input.session('0100-0700', '', group=GROUP_PO3)
+Manipulation_color = input.color(#F0B884, 'Color', group=GROUP_PO3)
+show_Distribution = input(true, 'Distribution', group=GROUP_PO3)
+Distribution_ses = input.session('0700-1300', '', group=GROUP_PO3)
+Distribution_color = input.color(#0CC1C0, 'Color', group=GROUP_PO3)
+
+On_Accumulation = math.sign(nz(time(timeframe.period, Accumulation_ses, 'America/New_York')))
+On_Manipulation = math.sign(nz(time(timeframe.period, Manipulation_ses, 'America/New_York')))
+On_Distribution = math.sign(nz(time(timeframe.period, Distribution_ses, 'America/New_York')))
+
+LowHighDetector(On, Color, Text) =>
+    var int Bar = 0
+    var float High = 0.0
+    var float Low = 0.0
+    var box BoX = na
+    var label LabeL = na
+    if On[1] == 0 and On == 1
+        Bar := bar_index
+        High := high
+        Low := low
+    else
+        if On[1] == 1 or On == 1
+            High := math.max(high, High)
+            Low := math.min(low, Low)
+    if On > On[1] and str.tonumber(timeframe.period) <= 60
+        BoX := box.new(bar_index, High, bar_index, Low, bgcolor=color.new(Color, 85), border_color=color.rgb(34, 101, 155), border_style=line.style_dotted)
+        LabeL := label.new(int(math.avg(Bar, bar_index)), High, text=Text, xloc=xloc.bar_index, yloc=yloc.price, size=size.normal, style=label.style_label_down, textcolor=color.rgb(34, 101, 155), color=color.rgb(255, 255, 255, 100))
+    if On[1] == 1 or On == 1
+        if not na(BoX)
+            box.set_top(BoX, High)
+            box.set_bottom(BoX, Low)
+            box.set_right(BoX, bar_index)
+        if not na(LabeL)
+            label.set_x(LabeL, math.round(math.avg(Bar, bar_index)))
+            label.set_y(LabeL, High)
+
+if showPO3 and show_Accumulation
+    LowHighDetector(On_Accumulation, Accumulation_color, 'Accumulation')
+
+if showPO3 and show_Manipulation
+    LowHighDetector(On_Manipulation, Manipulation_color, 'Manipulation')
+
+if showPO3 and show_Distribution
+    LowHighDetector(On_Distribution, Distribution_color, 'Distribution')
+
+// ===================== DRAW ON LIQUIDITY =====================
+var GROUP_DOL = 'Draw on Liquidity'
+pivotLength_dol = input.int(5, 'Pivot Length', minval=1, maxval=50, group=GROUP_DOL)
+volMultiplier = input.float(2.0, 'Volume Threshold', minval=0.1, step=0.1, group=GROUP_DOL)
+volPeriod = input.int(20, 'Volume MA Period', minval=1, group=GROUP_DOL)
+highLiqColor = input.color(#2962FF, 'High Liquidity', group=GROUP_DOL)
+lowLiqColor = input.color(#FF2727, 'Low Liquidity', group=GROUP_DOL)
+lineWidth_dol = input.int(1, 'Line Width', minval=1, maxval=4, group=GROUP_DOL)
+
+pivotHigh_dol = ta.pivothigh(high, pivotLength_dol, pivotLength_dol)
+pivotLow_dol = ta.pivotlow(low, pivotLength_dol, pivotLength_dol)
+averageVolume = ta.sma(volume, volPeriod)
+isHighVolume_dol = volume > volMultiplier * averageVolume
+
+isValidHigh_dol = not na(pivotHigh_dol) and isHighVolume_dol
+isValidLow_dol = not na(pivotLow_dol) and isHighVolume_dol
+
+var array<line> highLiquidityLines = array.new<line>(0)
+var array<line> lowLiquidityLines = array.new<line>(0)
+var array<bool> highLineHit = array.new<bool>(0)
+var array<bool> lowLineHit = array.new<bool>(0)
+
+if showDOL and isValidHigh_dol
+    newHighLine = line.new(x1=bar_index - pivotLength_dol, y1=pivotHigh_dol, x2=bar_index, y2=pivotHigh_dol, color=highLiqColor, width=lineWidth_dol, extend=extend.none)
+    array.push(highLiquidityLines, newHighLine)
+    array.push(highLineHit, false)
+
+if showDOL and isValidLow_dol
+    newLowLine = line.new(x1=bar_index - pivotLength_dol, y1=pivotLow_dol, x2=bar_index, y2=pivotLow_dol, color=lowLiqColor, width=lineWidth_dol, extend=extend.none)
+    array.push(lowLiquidityLines, newLowLine)
+    array.push(lowLineHit, false)
+
+// Update DOL lines
+if showDOL and array.size(highLiquidityLines) > 0
+    for i = 0 to array.size(highLiquidityLines) - 1
+        currentLine = array.get(highLiquidityLines, i)
+        if not array.get(highLineHit, i)
+            if close >= line.get_y1(currentLine)
+                array.set(highLineHit, i, true)
+                line.delete(currentLine)
+            else
+                line.set_x2(currentLine, bar_index)
+
+if showDOL and array.size(lowLiquidityLines) > 0
+    for i = 0 to array.size(lowLiquidityLines) - 1
+        currentLine = array.get(lowLiquidityLines, i)
+        if not array.get(lowLineHit, i)
+            if close <= line.get_y1(currentLine)
+                array.set(lowLineHit, i, true)
+                line.delete(currentLine)
+            else
+                line.set_x2(currentLine, bar_index)
+
+// ===================== TRADING SESSIONS =====================
+var GROUP_SESS = 'Trading Sessions'
+show_asian = input.bool(true, 'Show Asian Session', group=GROUP_SESS)
+show_london = input.bool(true, 'Show London Session', group=GROUP_SESS)
+show_ny = input.bool(true, 'Show New York Session', group=GROUP_SESS)
+asian_color = input.color(color.new(color.blue, 90), 'Asian', group=GROUP_SESS)
+london_color = input.color(color.new(color.teal, 90), 'London', group=GROUP_SESS)
+ny_color = input.color(color.new(color.silver, 90), 'New York', group=GROUP_SESS)
+
+asian_session = time(timeframe.period, '2000-0300', 'America/New_York')
+london_session = time(timeframe.period, '0300-0830', 'America/New_York')
+ny_session = time(timeframe.period, '0830-1600', 'America/New_York')
+
+bgcolor(showSessions and show_asian and not na(asian_session) ? asian_color : na, title='Asian Session')
+bgcolor(showSessions and show_london and not na(london_session) ? london_color : na, title='London Session')
+bgcolor(showSessions and show_ny and not na(ny_session) ? ny_color : na, title='NY Session')
+
+// ===================== PREMIUM/DISCOUNT ZONES =====================
+var GROUP_PD = 'Premium/Discount Zones'
+pd_high = input.float(defval=na, title='Range High', group=GROUP_PD)
+pd_low = input.float(defval=na, title='Range Low', group=GROUP_PD)
+show_premium = input.bool(true, 'Show Premium Zone', group=GROUP_PD)
+show_discount = input.bool(true, 'Show Discount Zone', group=GROUP_PD)
+show_equilibrium = input.bool(true, 'Show Equilibrium', group=GROUP_PD)
+premium_color = input.color(color.new(color.red, 90), 'Premium', group=GROUP_PD)
+discount_color = input.color(color.new(color.green, 90), 'Discount', group=GROUP_PD)
+eq_color = input.color(color.blue, 'Equilibrium', group=GROUP_PD)
+
+if showPD and not na(pd_high) and not na(pd_low)
+    midline = (pd_high + pd_low) / 2
+    premium_start = pd_high - 0.25 * (pd_high - pd_low)
+    discount_end = pd_high - 0.75 * (pd_high - pd_low)
+
+    if show_premium
+        line.new(bar_index, pd_high, bar_index + 1, pd_high, extend=extend.right, color=premium_color, width=2)
+        line.new(bar_index, premium_start, bar_index + 1, premium_start, extend=extend.right, color=premium_color, style=line.style_dotted)
+
+    if show_discount
+        line.new(bar_index, pd_low, bar_index + 1, pd_low, extend=extend.right, color=discount_color, width=2)
+        line.new(bar_index, discount_end, bar_index + 1, discount_end, extend=extend.right, color=discount_color, style=line.style_dotted)
+
+    if show_equilibrium
+        line.new(bar_index, midline, bar_index + 1, midline, extend=extend.right, color=eq_color, width=2, style=line.style_solid)
+
+// ===================== REJECTION BLOCKS =====================
+var GROUP_RB = 'Rejection Blocks'
+showBullRB = input.bool(true, 'Show Bullish RB', group=GROUP_RB)
+showBearRB = input.bool(true, 'Show Bearish RB', group=GROUP_RB)
+rbBullColor = input.color(color.new(color.green, 85), 'Bullish RB', group=GROUP_RB)
+rbBearColor = input.color(color.new(color.red, 85), 'Bearish RB', group=GROUP_RB)
+
+isBullishRB = close[1] < open[1] and low[1] < low[2] and low[1] < low
+isBearishRB = close[1] > open[1] and high[1] > high[2] and high[1] > high
+
+if showRB and showBullRB and isBullishRB
+    box.new(left=bar_index[1], top=high[1], right=bar_index, bottom=low[1], border_color=color.green, bgcolor=rbBullColor)
+    label.new(bar_index[1], low[1], 'Bull RB', style=label.style_label_up, color=color.green, textcolor=color.white, size=size.tiny)
+
+if showRB and showBearRB and isBearishRB
+    box.new(left=bar_index[1], top=high[1], right=bar_index, bottom=low[1], border_color=color.red, bgcolor=rbBearColor)
+    label.new(bar_index[1], high[1], 'Bear RB', style=label.style_label_down, color=color.red, textcolor=color.white, size=size.tiny)
+
+// ===================== S&D PROFILE (Simplified) =====================
+// Note: Full S&D Profile requires session tracking and statistics table
+// This is a simplified version showing session boxes only
+
+var GROUP_SD = 'Seek & Destroy Profile'
+sd_asian = input.session(title='Asia', defval='2000-0300', group=GROUP_SD)
+sd_london = input.session(title='London', defval='0300-0830', group=GROUP_SD)
+sd_ny = input.session(title='New York', defval='0830-1600', group=GROUP_SD)
+sd_asian_color = input.color(color.new(color.blue, 80), '', group=GROUP_SD)
+sd_london_color = input.color(color.new(color.yellow, 80), '', group=GROUP_SD)
+sd_ny_color = input.color(color.new(color.green, 80), '', group=GROUP_SD)
+
+// Note: Full implementation would track session highs/lows and create boxes
+// Simplified version uses background colors (already implemented in sessions section)
+

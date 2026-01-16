@@ -1,0 +1,304 @@
+//@version=5
+// Combined ICT Structure & Price Action Indicator
+// Includes: Order Blocks, FVG/IFVG, MSS/BOS, Displacement, Mitigation Blocks
+indicator('ICT Structure & Price Action [Combined]', overlay=true, max_bars_back=5000, max_boxes_count=500, max_labels_count=500, max_lines_count=500)
+
+// ===================== GLOBAL SETTINGS =====================
+var GROUP_GLOBAL = 'Global Settings'
+showOB = input.bool(true, 'Show Order Blocks', group=GROUP_GLOBAL)
+showFVG = input.bool(true, 'Show FVG', group=GROUP_GLOBAL)
+showMSS_BOS = input.bool(true, 'Show MSS/BOS', group=GROUP_GLOBAL)
+showDisplacement = input.bool(true, 'Show Displacement', group=GROUP_GLOBAL)
+showMB = input.bool(true, 'Show Mitigation Blocks', group=GROUP_GLOBAL)
+
+// ===================== ORDER BLOCKS =====================
+var GROUP_OB = 'Order Blocks'
+inputRange = input.int(25, 'Candle Range', minval=5, maxval=100, step=1, group=GROUP_OB)
+useMitigatedBlocks = input.bool(false, 'Show Mitigated Blocks', group=GROUP_OB)
+bearishOBColour = input.color(color.new(#DAA632, 80), title='Bearish OB', group=GROUP_OB)
+bullishOBColour = input.color(color.new(#C0E6AE, 60), title='Bullish OB', group=GROUP_OB)
+mitigatedOBColour = input.color(color.new(#CFCBCA, 80), title='Mitigated OB', group=GROUP_OB)
+
+// OB Variables
+var longBoxes = array.new_box()
+var longBoxStart = array.new_int()
+var longBoxState = array.new_int()
+var shortBoxes = array.new_box()
+var shortBoxStart = array.new_int()
+var shortBoxState = array.new_int()
+
+var int lastDownIndex = 0
+var float lastDown = 0
+var float lastLow = 0
+var int lastUpIndex = 0
+var float lastUp = 0
+var float lastUpLow = 0
+var float lastHigh = 0
+var int lastLongIndex = 0
+var int lastShortIndex = 0
+
+structureLowIndexPointer(len) =>
+    float minValue = ta.highest(high, inputRange)[1]
+    int minIndex = bar_index
+    for i = 1 to len
+        if low[i] < minValue
+            minValue := low[i]
+            minIndex := bar_index[i]
+    minIndex
+
+float structureLow = ta.lowest(low, inputRange)[1]
+int structureLowIndex = structureLowIndexPointer(inputRange)
+
+// Bearish break of structure
+if showOB and ta.crossunder(close, structureLow)
+    if (bar_index - lastUpIndex) < 1000
+        array.push(shortBoxStart, bar_index)
+        array.push(shortBoxState, 0)
+        array.push(shortBoxes, box.new(left=lastUpIndex, top=lastHigh, bottom=lastUpLow, right=lastUpIndex, bgcolor=bearishOBColour, border_color=color.new(#CFCBCA, 100), extend=extend.right))
+        lastShortIndex := lastUpIndex
+
+// Bullish break of structure
+if showOB and array.size(shortBoxes) > 0
+    for i = (array.size(shortBoxes) - 1) to 0
+        sbox = array.get(shortBoxes, i)
+        lstart = array.get(shortBoxStart, i)
+        lstate = array.get(shortBoxState, i)
+        top = box.get_top(sbox)
+        left = box.get_left(sbox)
+        bottom = box.get_bottom(sbox)
+        if (high > bottom and low < bottom and bar_index > lstart and lstate == 0 and useMitigatedBlocks)
+            sbox.set_bgcolor(mitigatedOBColour)
+            array.set(shortBoxState, i, 1)
+        if close > top
+            box.delete(sbox)
+            array.remove(shortBoxState, i)
+            array.remove(shortBoxes, i)
+            array.remove(shortBoxStart, i)
+            if (bar_index - lastDownIndex) < 1000 and bar_index > lastLongIndex
+                array.push(longBoxStart, bar_index + 1)
+                array.push(longBoxState, 0)
+                array.push(longBoxes, box.new(left=lastDownIndex, top=lastDown, bottom=lastLow, right=lastDownIndex, bgcolor=bullishOBColour, border_color=color.new(#CFCBCA, 100), extend=extend.right))
+                lastLongIndex := bar_index
+
+// Update bullish order blocks
+if showOB and array.size(longBoxes) > 0
+    for i = (array.size(longBoxes) - 1) to 0
+        lbox = array.get(longBoxes, i)
+        lstart = array.get(longBoxStart, i)
+        lstate = array.get(longBoxState, i)
+        bottom = box.get_bottom(lbox)
+        top = box.get_top(lbox)
+        if (low <= top and high > top and bar_index > lstart and lstate == 0)
+            if useMitigatedBlocks
+                lbox.set_bgcolor(mitigatedOBColour)
+            array.set(longBoxState, i, 1)
+        if close < bottom
+            array.remove(longBoxStart, i)
+            array.remove(longBoxState, i)
+            array.remove(longBoxes, i)
+            box.delete(lbox)
+
+// Record last up and down candles for OB
+if close < open
+    lastDown := high
+    lastDownIndex := bar_index
+    lastLow := low
+
+if close > open
+    lastUp := close
+    lastUpIndex := bar_index
+    lastUpLow := low
+    lastHigh := high
+
+lastHigh := high > lastHigh ? high : lastHigh
+lastLow := low < lastLow ? low : lastLow
+
+// ===================== FVG (Fair Value Gaps) =====================
+var GROUP_FVG = 'Fair Value Gaps'
+showBullFVG = input.bool(true, 'Show Bullish FVG', group=GROUP_FVG)
+showBearFVG = input.bool(true, 'Show Bearish FVG', group=GROUP_FVG)
+fvgBullColor = input.color(color.new(#4CAF4F, 65), 'Bullish FVG', group=GROUP_FVG)
+fvgBearColor = input.color(color.new(#FF5252, 65), 'Bearish FVG', group=GROUP_FVG)
+fvgValidityPeriod = input.int(500, 'FVG Validity Period (Bars)', group=GROUP_FVG, maxval=4998, minval=10)
+
+// FVG Detection
+bullishFVG = close > open and close[1] > open[1] and high[2] < low[0]
+bearishFVG = close < open and close[1] < open[1] and low[2] > high[0]
+
+var array<box> fvgBullBoxes = array.new_box()
+var array<box> fvgBearBoxes = array.new_box()
+var array<int> fvgBullBars = array.new_int()
+var array<int> fvgBearBars = array.new_int()
+
+// Create FVG boxes
+if showFVG and showBullFVG and bullishFVG
+    fvgBullBoxes.push(box.new(bar_index[2], low[0], bar_index, high[2], bgcolor=fvgBullColor, border_color=color.new(#4CAF4F, 100), extend=extend.right))
+    fvgBullBars.push(bar_index)
+
+if showFVG and showBearFVG and bearishFVG
+    fvgBearBoxes.push(box.new(bar_index[2], low[2], bar_index, high[0], bgcolor=fvgBearColor, border_color=color.new(#FF5252, 100), extend=extend.right))
+    fvgBearBars.push(bar_index)
+
+// Remove old FVG boxes
+if fvgBullBoxes.size() > 0
+    for i = fvgBullBoxes.size() - 1 to 0
+        if bar_index - fvgBullBars.get(i) > fvgValidityPeriod or close < box.get_bottom(fvgBullBoxes.get(i))
+            box.delete(fvgBullBoxes.get(i))
+            fvgBullBoxes.remove(i)
+            fvgBullBars.remove(i)
+
+if fvgBearBoxes.size() > 0
+    for i = fvgBearBoxes.size() - 1 to 0
+        if bar_index - fvgBearBars.get(i) > fvgValidityPeriod or close > box.get_top(fvgBearBoxes.get(i))
+            box.delete(fvgBearBoxes.get(i))
+            fvgBearBoxes.remove(i)
+            fvgBearBars.remove(i)
+
+// ===================== MSS & BOS =====================
+var GROUP_MSS = 'Market Structure (MSS/BOS)'
+tfStructure = input.timeframe('', 'Timeframe', group=GROUP_MSS)
+rlBars = input.int(2, 'Swing Bars', 1, group=GROUP_MSS)
+showBos = input.bool(true, 'Show BOS', group=GROUP_MSS)
+showMss = input.bool(true, 'Show MSS', group=GROUP_MSS)
+bosBullCol = input.color(#008080, 'BOS Bullish', group=GROUP_MSS)
+bosBearCol = input.color(#FF0000, 'BOS Bearish', group=GROUP_MSS)
+mssBullCol = input.color(#008080, 'MSS Bullish', group=GROUP_MSS)
+mssBearCol = input.color(#FF0000, 'MSS Bearish', group=GROUP_MSS)
+
+type piv
+    float pp
+    int pi
+
+var piv pH = na
+var piv pL = na
+var piv nPh = na
+var piv nPl = na
+var float nPh1 = na
+var float nPl1 = na
+var lin = array.new_line()
+var bool bull = false
+
+Fmtf() =>
+    phPs = ta.pivothigh(rlBars, rlBars)
+    plPs = ta.pivotlow(rlBars, rlBars)
+    int phBi = na
+    int plBi = na
+    if not na(phPs)
+        phBi := time[rlBars]
+    if not na(plPs)
+        plBi := time[rlBars]
+    [phPs, phBi, plPs, plBi]
+
+[phPs, phBi, plPs, plBi] = request.security(syminfo.tickerid, tfStructure, Fmtf(), lookahead=barmerge.lookahead_on)
+
+if showMSS_BOS and not na(phPs)
+    nPh := piv.new(phPs, phBi)
+    if na(pH)
+        pH := piv.new(phPs, phBi)
+
+if showMSS_BOS and not na(plPs)
+    nPl := piv.new(plPs, plBi)
+    if na(pL)
+        pL := piv.new(plPs, plBi)
+
+var mssBullVar = false
+var mssBearVar = false
+
+[htfClose, htfTime] = request.security(syminfo.tickerid, tfStructure, [close[1], time[1]], lookahead=barmerge.lookahead_on)
+highCond = bull ? high : htfClose
+timeHighCond = bull ? time : htfTime
+
+if showMSS_BOS and (plPs > nPl1 and bull) or na(nPl1) or plPs < nPl1
+    nPl1 := plPs
+
+breakHighCond = not na(pH) and highCond > pH.pp
+
+FtfLimit(val) =>
+    timeframe.in_seconds() <= timeframe.in_seconds(val)
+
+var tfL0 = FtfLimit(tfStructure)
+
+if showMSS_BOS and breakHighCond
+    linCon = bull ? showBos : showMss
+    linCol = bull ? bosBullCol : mssBullCol
+    if bull
+        mssBullVar := false
+    else
+        mssBullVar := true
+    if tfL0 and linCon
+        line.new(pH.pi, pH.pp, timeHighCond, pH.pp, color=linCol, xloc=xloc.bar_time, style=bull ? line.style_dotted : line.style_solid, width=2)
+    bull := true
+    mssBearVar := false
+    pH := na
+    pL := na
+    if not na(nPl1) and not na(nPl)
+        pL := piv.new(nPl.pp, nPl.pi)
+
+lowCond = bull ? htfClose : low
+timeLowCond = bull ? htfTime : time
+
+if showMSS_BOS and (phPs < nPh1 and not bull) or na(nPh1) or phPs > nPh1
+    nPh1 := phPs
+
+breakLowCond = not na(pL) and lowCond < pL.pp
+
+if showMSS_BOS and breakLowCond
+    linCon = bull ? showMss : showBos
+    linCol = bull ? mssBearCol : bosBearCol
+    if not bull
+        mssBearVar := false
+    else
+        mssBearVar := true
+    if tfL0 and linCon
+        line.new(pL.pi, pL.pp, timeLowCond, pL.pp, color=linCol, xloc=xloc.bar_time, style=bull ? line.style_solid : line.style_dotted, width=2)
+    bull := false
+    mssBullVar := false
+    pH := na
+    pL := na
+    if not na(nPh1) and not na(nPh)
+        pH := piv.new(nPh.pp, nPh.pi)
+
+// ===================== DISPLACEMENT =====================
+var GROUP_DISP = 'Displacement'
+require_fvg = input.bool(true, 'Require FVG', group=GROUP_DISP)
+disp_type = input.string('Open to Close', 'Displacement Type', options=['Open to Close', 'High to Low'], group=GROUP_DISP)
+std_len = input.int(100, minval=1, title='Displacement Length', group=GROUP_DISP)
+std_x = input.int(4, minval=0, title='Displacement Strength', group=GROUP_DISP)
+disp_color = input.color(color.yellow, 'Bar Color', group=GROUP_DISP)
+
+candle_range = disp_type == 'Open to Close' ? math.abs(open - close) : high - low
+std = ta.stdev(candle_range, std_len) * std_x
+fvg = close[1] > open[1] ? high[2] < low[0] : low[2] > high[0]
+displacement = require_fvg ? candle_range[1] > std[1] and fvg : candle_range > std
+
+barcolor(showDisplacement and displacement ? disp_color : na, offset=require_fvg ? -1 : na)
+
+// ===================== MITIGATION BLOCKS =====================
+var GROUP_MB = 'Mitigation Blocks'
+mbShowBull = input.bool(true, 'Show Bullish MB', group=GROUP_MB)
+mbShowBear = input.bool(true, 'Show Bearish MB', group=GROUP_MB)
+mbBullColor = input.color(color.new(#00FF00, 85), 'Bullish MB', group=GROUP_MB)
+mbBearColor = input.color(color.new(#FF0000, 85), 'Bearish MB', group=GROUP_MB)
+mbLookback = input.int(20, 'Lookback Period', group=GROUP_MB)
+
+var array<box> mbBullBoxes = array.new_box()
+var array<box> mbBearBoxes = array.new_box()
+
+// Detect mitigation blocks (Order blocks that have been tested and held)
+if showMB and mbShowBull
+    bullishMB = close[1] > open[1] and low <= low[1] and close > low[1]
+    if bullishMB
+        mbBullBoxes.push(box.new(bar_index[1], high[1], bar_index, low[1], bgcolor=mbBullColor, border_color=color.new(#00FF00, 100)))
+
+if showMB and mbShowBear
+    bearishMB = close[1] < open[1] and high >= high[1] and close < high[1]
+    if bearishMB
+        mbBearBoxes.push(box.new(bar_index[1], high[1], bar_index, low[1], bgcolor=mbBearColor, border_color=color.new(#FF0000, 100)))
+
+// Remove old MB boxes
+if mbBullBoxes.size() > mbLookback
+    box.delete(mbBullBoxes.shift())
+
+if mbBearBoxes.size() > mbLookback
+    box.delete(mbBearBoxes.shift())
+
