@@ -478,7 +478,7 @@ if showMSS_BOS and showMSSOnCurrentTF and breakHighCond
         structLines.push(newLine)
         labelText = isBOS ? 'BOS' : 'MSS'
         midX = int((pH.pi + timeHighCond) / 2)
-        label.new(midX, pH.pp, labelText, xloc=xloc.bar_time, style=label.style_label_down, color=color.new(color.white, 100), textcolor=color.blue, size=size.tiny, textalign=text.align_center)
+        label.new(midX, pH.pp, labelText, xloc=xloc.bar_time, style=label.style_label_down, color=color.new(color.white, 100), textcolor=color.green, size=size.tiny, textalign=text.align_center)
     bull := true
     mssBearVar := false
     pH := na
