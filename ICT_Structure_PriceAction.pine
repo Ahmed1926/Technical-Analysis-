@@ -1,13 +1,14 @@
 //@version=6
 // Combined ICT Structure & Price Action Indicator
 // Optimized for white background, mobile-friendly
-// Includes: Order Blocks, Breaker Blocks, FVG/IFVG, MSS/BOS, Displacement, Mitigation Blocks
+// Includes: Order Blocks, Breaker Blocks, Propulsion Blocks, FVG/IFVG, MSS/BOS, Displacement, Mitigation Blocks
 indicator('ICT Structure & Price Action [Combined]', overlay=true, max_bars_back=5000, max_boxes_count=500, max_labels_count=500, max_lines_count=500)
 
 // ===================== GLOBAL SETTINGS =====================
 var GROUP_GLOBAL = 'Global Settings'
 showOB = input.bool(true, 'Show Order Blocks', group=GROUP_GLOBAL)
 showBB = input.bool(true, 'Show Breaker Blocks', group=GROUP_GLOBAL)
+showPB = input.bool(true, 'Show Propulsion Blocks', group=GROUP_GLOBAL)
 showFVG = input.bool(true, 'Show FVG/IFVG', group=GROUP_GLOBAL)
 showMSS_BOS = input.bool(true, 'Show MSS/BOS', group=GROUP_GLOBAL)
 showDisplacement = input.bool(true, 'Show Displacement', group=GROUP_GLOBAL)
@@ -270,6 +271,99 @@ if showBB and showBBOnCurrentTF and array.size(breakerBoxes) > 0
             array.remove(breakerTypes, i)
             array.remove(breakerStarts, i)
 
+// ===================== PROPULSION BLOCKS =====================
+var GROUP_PB = 'Propulsion Blocks'
+pbTimeframe = input.timeframe('240', 'Timeframe for Analysis (4H recommended)', group=GROUP_PB)
+pbMultiplier = input.float(2.0, 'Propulsion Multiplier', minval=1.0, step=0.5, group=GROUP_PB, tooltip='Price must move this many times the OB size to become a PB')
+bullishPBColour = input.color(color.new(#089981, 60), title='Bullish PB', group=GROUP_PB)
+bearishPBColour = input.color(color.new(#F23645, 60), title='Bearish PB', group=GROUP_PB)
+
+pbTF = pbTimeframe == '' ? getCurrentTF() : pbTimeframe
+showPBOnCurrentTF = shouldShowOnCurrentTF(pbTF)
+
+// PB tracking arrays
+var propulsionBoxes = array.new_box()
+var propulsionTypes = array.new_int()  // 1 = bullish, -1 = bearish
+var propulsionTestPrices = array.new_float()  // Track the price when tested
+
+// Check if existing OBs become Propulsion Blocks
+// Bullish OB becomes PB when tested and price propels upward
+if showPB and showPBOnCurrentTF and array.size(longBoxes) > 0
+    for i = (array.size(longBoxes) - 1) to 0
+        lbox = array.get(longBoxes, i)
+        top = box.get_top(lbox)
+        bottom = box.get_bottom(lbox)
+        boxLeft = box.get_left(lbox)
+        obSize = top - bottom
+
+        // Check if price tested this OB (touched it)
+        if low <= top and high >= bottom and bar_index > boxLeft + 1
+            testPrice = low  // Track where it was tested
+
+            // Check if price then propelled upward (strong move)
+            if high > top + (obSize * pbMultiplier)
+                // This OB became a Propulsion Block
+                newPB = box.new(left=boxLeft, top=top, bottom=bottom, right=bar_index, bgcolor=bullishPBColour, border_color=color.new(#089981, 100))
+                array.push(propulsionBoxes, newPB)
+                array.push(propulsionTypes, 1)
+                array.push(propulsionTestPrices, testPrice)
+                label.new(bar_index, top, 'PB+', style=label.style_label_down, color=color.new(color.white, 100), textcolor=#089981, size=size.tiny)
+
+                // Remove from regular OB array
+                box.delete(lbox)
+                array.remove(longBoxes, i)
+                array.remove(longBoxStart, i)
+                array.remove(longBoxState, i)
+
+// Bearish OB becomes PB when tested and price propels downward
+if showPB and showPBOnCurrentTF and array.size(shortBoxes) > 0
+    for i = (array.size(shortBoxes) - 1) to 0
+        sbox = array.get(shortBoxes, i)
+        top = box.get_top(sbox)
+        bottom = box.get_bottom(sbox)
+        boxLeft = box.get_left(sbox)
+        obSize = top - bottom
+
+        // Check if price tested this OB
+        if low <= top and high >= bottom and bar_index > boxLeft + 1
+            testPrice = high  // Track where it was tested
+
+            // Check if price then propelled downward
+            if low < bottom - (obSize * pbMultiplier)
+                // This OB became a Propulsion Block
+                newPB = box.new(left=boxLeft, top=top, bottom=bottom, right=bar_index, bgcolor=bearishPBColour, border_color=color.new(#F23645, 100))
+                array.push(propulsionBoxes, newPB)
+                array.push(propulsionTypes, -1)
+                array.push(propulsionTestPrices, testPrice)
+                label.new(bar_index, bottom, 'PB-', style=label.style_label_up, color=color.new(color.white, 100), textcolor=#F23645, size=size.tiny)
+
+                // Remove from regular OB array
+                box.delete(sbox)
+                array.remove(shortBoxes, i)
+                array.remove(shortBoxStart, i)
+                array.remove(shortBoxState, i)
+
+// Update and clean up old Propulsion Blocks
+if showPB and showPBOnCurrentTF and array.size(propulsionBoxes) > 0
+    for i = (array.size(propulsionBoxes) - 1) to 0
+        pbox = array.get(propulsionBoxes, i)
+        ptype = array.get(propulsionTypes, i)
+        top = box.get_top(pbox)
+        bottom = box.get_bottom(pbox)
+
+        // Bullish PB invalidated if price closes below it
+        if ptype == 1 and close < bottom
+            box.delete(pbox)
+            array.remove(propulsionBoxes, i)
+            array.remove(propulsionTypes, i)
+            array.remove(propulsionTestPrices, i)
+        // Bearish PB invalidated if price closes above it
+        else if ptype == -1 and close > top
+            box.delete(pbox)
+            array.remove(propulsionBoxes, i)
+            array.remove(propulsionTypes, i)
+            array.remove(propulsionTestPrices, i)
+
 // ===================== FVG (Fair Value Gaps) =====================
 var GROUP_FVG = 'Fair Value Gaps'
 fvgTimeframe = input.timeframe('60', 'Timeframe for Analysis (1H recommended)', group=GROUP_FVG)
@@ -313,7 +407,7 @@ tfStructure = input.timeframe('240', 'Timeframe for Analysis (4H recommended)', 
 rlBars = input.int(2, 'Swing Bars', 1, group=GROUP_MSS)
 showBos = input.bool(true, 'Show BOS', group=GROUP_MSS)
 showMss = input.bool(true, 'Show MSS', group=GROUP_MSS)
-mssLineColor = input.color(color.new(#404040, 0), 'MSS/BOS Line Color (Dark Gray)', group=GROUP_MSS)
+mssLineColor = input.color(color.black, 'MSS/BOS Line Color', group=GROUP_MSS)
 
 // Determine if MSS/BOS should display
 mssTF = tfStructure == '' ? getCurrentTF() : tfStructure
@@ -384,7 +478,7 @@ if showMSS_BOS and showMSSOnCurrentTF and breakHighCond
         structLines.push(newLine)
         labelText = isBOS ? 'BOS' : 'MSS'
         midX = int((pH.pi + timeHighCond) / 2)
-        label.new(midX, pH.pp, labelText, xloc=xloc.bar_time, style=label.style_label_down, color=color.new(color.white, 100), textcolor=color.green, size=size.tiny, textalign=text.align_center)
+        label.new(midX, pH.pp, labelText, xloc=xloc.bar_time, style=label.style_label_down, color=color.new(color.white, 100), textcolor=color.black, size=size.tiny, textalign=text.align_center)
     bull := true
     mssBearVar := false
     pH := na
@@ -412,7 +506,7 @@ if showMSS_BOS and showMSSOnCurrentTF and breakLowCond
         structLines.push(newLine)
         labelText = isBOS ? 'BOS' : 'MSS'
         midX = int((pL.pi + timeLowCond) / 2)
-        label.new(midX, pL.pp, labelText, xloc=xloc.bar_time, style=label.style_label_up, color=color.new(color.white, 100), textcolor=color.red, size=size.tiny, textalign=text.align_center)
+        label.new(midX, pL.pp, labelText, xloc=xloc.bar_time, style=label.style_label_up, color=color.new(color.white, 100), textcolor=color.black, size=size.tiny, textalign=text.align_center)
     bull := false
     mssBullVar := false
     pH := na
