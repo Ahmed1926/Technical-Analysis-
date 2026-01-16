@@ -18,11 +18,74 @@ showPD = input.bool(false, 'Show Premium/Discount Zones', group=GROUP_GLOBAL)
 showRB = input.bool(true, 'Show Rejection Blocks', group=GROUP_GLOBAL)
 showAbbreviations = input.bool(true, 'Show Abbreviations (Top Right)', group=GROUP_GLOBAL)
 
+// ===================== HIGHER TIMEFRAME VISIBILITY CONTROL =====================
+canShowWeekly() =>
+    tf = timeframe.period
+    tf == 'W' or tf == 'D'
+
+canShowDaily() =>
+    tfInMinutes = timeframe.in_seconds() / 60
+    tfInMinutes <= 1440 and tfInMinutes >= 240
+
+canShow4H() =>
+    tfInMinutes = timeframe.in_seconds() / 60
+    tfInMinutes <= 240 and tfInMinutes >= 30
+
+canShow1H() =>
+    tfInMinutes = timeframe.in_seconds() / 60
+    tfInMinutes <= 60 and tfInMinutes >= 5
+
+canShow5M() =>
+    tfInMinutes = timeframe.in_seconds() / 60
+    tfInMinutes <= 5 and tfInMinutes >= 1
+
+canShow1M() =>
+    tfInMinutes = timeframe.in_seconds() / 60
+    tfInMinutes == 5 or tfInMinutes == 1
+
+getCurrentTF() =>
+    string result = timeframe.period
+    if canShowWeekly()
+        result := 'W'
+    else if canShowDaily()
+        result := 'D'
+    else if canShow4H()
+        result := '240'
+    else if canShow1H()
+        result := '60'
+    else if canShow5M()
+        result := '5'
+    else if canShow1M()
+        result := '1'
+    result
+
+shouldShowOnCurrentTF(string conceptTF) =>
+    bool show = false
+    if conceptTF == 'W'
+        show := canShowWeekly()
+    else if conceptTF == 'D'
+        show := canShowDaily()
+    else if conceptTF == '240'
+        show := canShow4H()
+    else if conceptTF == '60'
+        show := canShow1H()
+    else if conceptTF == '5'
+        show := canShow5M()
+    else if conceptTF == '1'
+        show := canShow1M()
+    else
+        show := true
+    show
+
 // ===================== BSL & SSL (Buy/Sell Side Liquidity) =====================
 var GROUP_BSL = 'Buy/Sell Side Liquidity'
+bslTimeframe = input.timeframe('', 'Timeframe for Analysis', group=GROUP_BSL)
 length_bsl = input.int(20, title='Lookback Length', group=GROUP_BSL)
 bslColor = input.color(color.green, 'BSL Color', group=GROUP_BSL)
 sslColor = input.color(color.red, 'SSL Color', group=GROUP_BSL)
+
+bslTF = bslTimeframe == '' ? getCurrentTF() : bslTimeframe
+showBSLOnCurrentTF = shouldShowOnCurrentTF(bslTF)
 
 highestHigh = ta.highest(high, length_bsl)
 lowestLow = ta.lowest(low, length_bsl)
@@ -36,7 +99,7 @@ var line sslLine = na
 var label bslLabel = na
 var label sslLabel = na
 
-if showBSL_SSL
+if showBSL_SSL and showBSLOnCurrentTF
     if bslBreak
         bslLevel := high
         line.delete(bslLine)
@@ -53,9 +116,13 @@ if showBSL_SSL
 
 // ===================== EQUAL HIGHS & LOWS =====================
 var GROUP_EQL = 'Equal Highs/Lows'
+eqlTimeframe = input.timeframe('', 'Timeframe for Analysis', group=GROUP_EQL)
 precision_eql = input.int(2, step=1, minval=1, title='Precision', group=GROUP_EQL)
 eqlHighColor = input.color(color.new(color.green, 0), 'Highs Color', group=GROUP_EQL)
 eqlLowColor = input.color(color.new(color.red, 0), 'Lows Color', group=GROUP_EQL)
+
+eqlTF = eqlTimeframe == '' ? getCurrentTF() : eqlTimeframe
+showEQLOnCurrentTF = shouldShowOnCurrentTF(eqlTF)
 
 max_eq = math.max(high, high[1])
 min_eq = math.min(low, low[1])
@@ -65,7 +132,7 @@ bottom_eq = (math.abs(low - low[1]) / (max_eq - min_eq)) * 100
 top_v = ta.crossunder(top_eq, precision_eql)
 bottom_v = ta.crossunder(bottom_eq, precision_eql)
 
-if showEQH_EQL
+if showEQH_EQL and showEQLOnCurrentTF
     if top_v
         line.new(bar_index[1], high[1], bar_index, high, color=eqlHighColor, style=line.style_solid, width=2)
         label.new(bar_index, high, 'EQH', style=label.style_label_down, color=color.new(color.white, 100), textcolor=color.green, size=size.tiny)
@@ -75,8 +142,12 @@ if showEQH_EQL
 
 // ===================== LIQUIDITY SWEEPS =====================
 var GROUP_SWEEP = 'Liquidity Sweeps'
+sweepTimeframe = input.timeframe('', 'Timeframe for Analysis', group=GROUP_SWEEP)
 pivotLength = input.int(14, title='Pivot Length', group=GROUP_SWEEP)
 sweepColor = input.color(color.yellow, 'Sweep Color', group=GROUP_SWEEP)
+
+sweepTF = sweepTimeframe == '' ? getCurrentTF() : sweepTimeframe
+showSweepOnCurrentTF = shouldShowOnCurrentTF(sweepTF)
 
 ph_sweep = ta.pivothigh(pivotLength, pivotLength)
 pl_sweep = ta.pivotlow(pivotLength, pivotLength)
@@ -97,11 +168,11 @@ if bool(pl_sweep)
 bearishSweepCondition = high > swingHigh_sweep and close < swingHigh_sweep
 bullishSweepCondition = low < swingLow_sweep and close > swingLow_sweep
 
-if showLiqSweeps and not sweptHigh and not na(swingHigh_sweep) and bearishSweepCondition
+if showLiqSweeps and showSweepOnCurrentTF and not sweptHigh and not na(swingHigh_sweep) and bearishSweepCondition
     label.new(bar_index, high, 'SWEEP', color=sweepColor, style=label.style_label_down, textcolor=color.black, size=size.tiny)
     sweptHigh := true
 
-if showLiqSweeps and not sweptLow and not na(swingLow_sweep) and bullishSweepCondition
+if showLiqSweeps and showSweepOnCurrentTF and not sweptLow and not na(swingLow_sweep) and bullishSweepCondition
     label.new(bar_index, low, 'SWEEP', color=sweepColor, style=label.style_label_up, textcolor=color.black, size=size.tiny)
     sweptLow := true
 
@@ -112,6 +183,7 @@ w_bias = input.bool(false, 'Weekly Bias', group=GROUP_BIAS)
 bullBiasColor = input.color(color.new(color.green, 0), 'Bull Bias', group=GROUP_BIAS)
 bearBiasColor = input.color(color.new(color.red, 0), 'Bear Bias', group=GROUP_BIAS)
 
+// Bias automatically respects timeframe (daily for daily bias, weekly for weekly bias)
 type info_bias
     float ph
     float pl
@@ -127,7 +199,7 @@ var w_info = info_bias.new()
 new_day = timeframe.change('D')
 new_week = timeframe.change('W')
 
-if showBias and d_bias and new_day
+if showBias and d_bias and new_day and canShowDaily()
     if not na(d_info.ch)
         if close[1] >= d_info.co
             d_info.p_up := true
@@ -146,7 +218,7 @@ else
     d_info.ch := math.max(high, d_info.ch)
     d_info.cl := math.min(low, d_info.cl)
 
-plotshape(showBias and d_bias, 'Daily Bias', style=shape.square, size=size.tiny, location=location.top, color=d_info.bias == 1 ? bullBiasColor : d_info.bias == -1 ? bearBiasColor : na)
+plotshape(showBias and d_bias and canShowDaily(), 'Daily Bias', style=shape.square, size=size.tiny, location=location.top, color=d_info.bias == 1 ? bullBiasColor : d_info.bias == -1 ? bearBiasColor : na)
 
 // ===================== POWER OF 3 =====================
 var GROUP_PO3 = 'Power of 3'
@@ -160,6 +232,7 @@ show_Distribution = input(true, 'Distribution', group=GROUP_PO3)
 Distribution_ses = input.session('0700-1300', '', group=GROUP_PO3)
 Distribution_color = input.color(color.new(#0CC1C0, 90), 'Color', group=GROUP_PO3)
 
+// Power of 3 shows on intraday timeframes (1H and below)
 On_Accumulation = math.sign(nz(time(timeframe.period, Accumulation_ses, 'America/New_York')))
 On_Manipulation = math.sign(nz(time(timeframe.period, Manipulation_ses, 'America/New_York')))
 On_Distribution = math.sign(nz(time(timeframe.period, Distribution_ses, 'America/New_York')))
@@ -190,23 +263,27 @@ LowHighDetector(On, Color, Text) =>
             label.set_x(LabeL, math.round(math.avg(Bar, bar_index)))
             label.set_y(LabeL, High)
 
-if showPO3 and show_Accumulation
+if showPO3 and show_Accumulation and canShow1H()
     LowHighDetector(On_Accumulation, Accumulation_color, 'ACC')
 
-if showPO3 and show_Manipulation
+if showPO3 and show_Manipulation and canShow1H()
     LowHighDetector(On_Manipulation, Manipulation_color, 'MAN')
 
-if showPO3 and show_Distribution
+if showPO3 and show_Distribution and canShow1H()
     LowHighDetector(On_Distribution, Distribution_color, 'DIST')
 
 // ===================== DRAW ON LIQUIDITY =====================
 var GROUP_DOL = 'Draw on Liquidity'
+dolTimeframe = input.timeframe('', 'Timeframe for Analysis', group=GROUP_DOL)
 pivotLength_dol = input.int(5, 'Pivot Length', minval=1, maxval=50, group=GROUP_DOL)
 volMultiplier = input.float(2.0, 'Volume Threshold', minval=0.1, step=0.1, group=GROUP_DOL)
 volPeriod = input.int(20, 'Volume MA Period', minval=1, group=GROUP_DOL)
 highLiqColor = input.color(color.new(#2962FF, 0), 'High Liquidity', group=GROUP_DOL)
 lowLiqColor = input.color(color.new(#FF2727, 0), 'Low Liquidity', group=GROUP_DOL)
 lineWidth_dol = input.int(2, 'Line Width', minval=1, maxval=4, group=GROUP_DOL)
+
+dolTF = dolTimeframe == '' ? getCurrentTF() : dolTimeframe
+showDOLOnCurrentTF = shouldShowOnCurrentTF(dolTF)
 
 pivotHigh_dol = ta.pivothigh(high, pivotLength_dol, pivotLength_dol)
 pivotLow_dol = ta.pivotlow(low, pivotLength_dol, pivotLength_dol)
@@ -221,13 +298,13 @@ var array<line> lowLiquidityLines = array.new<line>(0)
 var array<bool> highLineHit = array.new<bool>(0)
 var array<bool> lowLineHit = array.new<bool>(0)
 
-if showDOL and isValidHigh_dol
+if showDOL and showDOLOnCurrentTF and isValidHigh_dol
     newHighLine = line.new(x1=bar_index - pivotLength_dol, y1=pivotHigh_dol, x2=bar_index, y2=pivotHigh_dol, color=highLiqColor, width=lineWidth_dol, extend=extend.right)
     array.push(highLiquidityLines, newHighLine)
     array.push(highLineHit, false)
     label.new(bar_index, pivotHigh_dol, 'DOL', style=label.style_label_down, color=color.new(color.white, 100), textcolor=highLiqColor, size=size.tiny)
 
-if showDOL and isValidLow_dol
+if showDOL and showDOLOnCurrentTF and isValidLow_dol
     newLowLine = line.new(x1=bar_index - pivotLength_dol, y1=pivotLow_dol, x2=bar_index, y2=pivotLow_dol, color=lowLiqColor, width=lineWidth_dol, extend=extend.right)
     array.push(lowLiquidityLines, newLowLine)
     array.push(lowLineHit, false)
@@ -259,21 +336,22 @@ var GROUP_SESS = 'Trading Sessions'
 show_asian = input.bool(true, 'Show Asian Session', group=GROUP_SESS)
 show_london = input.bool(true, 'Show London Session', group=GROUP_SESS)
 show_ny = input.bool(true, 'Show New York Session', group=GROUP_SESS)
-// Colors optimized for white background per requirements
 asian_color = input.color(color.new(color.blue, 90), 'Asian', group=GROUP_SESS)
 london_color = input.color(color.new(color.teal, 90), 'London', group=GROUP_SESS)
 ny_color = input.color(color.new(color.black, 90), 'New York (Black)', group=GROUP_SESS)
 
+// Sessions show on intraday timeframes
 asian_session = time(timeframe.period, '2000-0300', 'America/New_York')
 london_session = time(timeframe.period, '0300-0830', 'America/New_York')
 ny_session = time(timeframe.period, '0830-1600', 'America/New_York')
 
-bgcolor(showSessions and show_asian and not na(asian_session) ? asian_color : na, title='Asian Session')
-bgcolor(showSessions and show_london and not na(london_session) ? london_color : na, title='London Session')
-bgcolor(showSessions and show_ny and not na(ny_session) ? ny_color : na, title='NY Session')
+bgcolor(showSessions and show_asian and not na(asian_session) and canShow1H() ? asian_color : na, title='Asian Session')
+bgcolor(showSessions and show_london and not na(london_session) and canShow1H() ? london_color : na, title='London Session')
+bgcolor(showSessions and show_ny and not na(ny_session) and canShow1H() ? ny_color : na, title='NY Session')
 
 // ===================== PREMIUM/DISCOUNT ZONES =====================
 var GROUP_PD = 'Premium/Discount Zones'
+pdTimeframe = input.timeframe('', 'Timeframe for Analysis', group=GROUP_PD)
 pd_high = input.float(defval=na, title='Range High', group=GROUP_PD)
 pd_low = input.float(defval=na, title='Range Low', group=GROUP_PD)
 show_premium = input.bool(true, 'Show Premium Zone', group=GROUP_PD)
@@ -283,7 +361,10 @@ premium_color = input.color(color.new(color.red, 0), 'Premium', group=GROUP_PD)
 discount_color = input.color(color.new(color.green, 0), 'Discount', group=GROUP_PD)
 eq_color = input.color(color.new(color.blue, 0), 'Equilibrium', group=GROUP_PD)
 
-if showPD and not na(pd_high) and not na(pd_low)
+pdTF = pdTimeframe == '' ? getCurrentTF() : pdTimeframe
+showPDOnCurrentTF = shouldShowOnCurrentTF(pdTF)
+
+if showPD and showPDOnCurrentTF and not na(pd_high) and not na(pd_low)
     midline = (pd_high + pd_low) / 2
     premium_start = pd_high - 0.25 * (pd_high - pd_low)
     discount_end = pd_high - 0.75 * (pd_high - pd_low)
@@ -301,19 +382,23 @@ if showPD and not na(pd_high) and not na(pd_low)
 
 // ===================== REJECTION BLOCKS =====================
 var GROUP_RB = 'Rejection Blocks'
+rbTimeframe = input.timeframe('', 'Timeframe for Analysis', group=GROUP_RB)
 showBullRB = input.bool(true, 'Show Bullish RB', group=GROUP_RB)
 showBearRB = input.bool(true, 'Show Bearish RB', group=GROUP_RB)
 rbBullColor = input.color(color.new(color.green, 85), 'Bullish RB', group=GROUP_RB)
 rbBearColor = input.color(color.new(color.red, 85), 'Bearish RB', group=GROUP_RB)
 
+rbTF = rbTimeframe == '' ? getCurrentTF() : rbTimeframe
+showRBOnCurrentTF = shouldShowOnCurrentTF(rbTF)
+
 isBullishRB = close[1] < open[1] and low[1] < low[2] and low[1] < low
 isBearishRB = close[1] > open[1] and high[1] > high[2] and high[1] > high
 
-if showRB and showBullRB and isBullishRB
+if showRB and showRBOnCurrentTF and showBullRB and isBullishRB
     box.new(left=bar_index[1], top=high[1], right=bar_index, bottom=low[1], border_color=color.new(color.green, 100), bgcolor=rbBullColor)
     label.new(bar_index[1], low[1], 'RB+', style=label.style_label_up, color=color.new(color.white, 100), textcolor=color.green, size=size.tiny)
 
-if showRB and showBearRB and isBearishRB
+if showRB and showRBOnCurrentTF and showBearRB and isBearishRB
     box.new(left=bar_index[1], top=high[1], right=bar_index, bottom=low[1], border_color=color.new(color.red, 100), bgcolor=rbBearColor)
     label.new(bar_index[1], high[1], 'RB-', style=label.style_label_down, color=color.new(color.white, 100), textcolor=color.red, size=size.tiny)
 
@@ -322,30 +407,30 @@ var table abbrevTable = table.new(position.top_right, 1, 15, bgcolor=color.new(c
 
 if showAbbreviations and barstate.islast
     row = 0
-    if showBSL_SSL and (not na(bslLevel) or not na(sslLevel))
+    if showBSL_SSL and showBSLOnCurrentTF and (not na(bslLevel) or not na(sslLevel))
         table.cell(abbrevTable, 0, row, 'BSL/SSL', text_color=color.black, text_size=size.small)
         row += 1
-    if showEQH_EQL and (top_v or bottom_v)
+    if showEQH_EQL and showEQLOnCurrentTF and (top_v or bottom_v)
         table.cell(abbrevTable, 0, row, 'EQH/EQL', text_color=color.black, text_size=size.small)
         row += 1
-    if showLiqSweeps and (bullishSweepCondition or bearishSweepCondition)
+    if showLiqSweeps and showSweepOnCurrentTF and (bullishSweepCondition or bearishSweepCondition)
         table.cell(abbrevTable, 0, row, 'SWEEP', text_color=color.black, text_size=size.small)
         row += 1
-    if showBias
+    if showBias and canShowDaily()
         table.cell(abbrevTable, 0, row, 'BIAS', text_color=color.black, text_size=size.small)
         row += 1
-    if showPO3
+    if showPO3 and canShow1H()
         table.cell(abbrevTable, 0, row, 'PO3', text_color=color.black, text_size=size.small)
         row += 1
-    if showDOL and (array.size(highLiquidityLines) > 0 or array.size(lowLiquidityLines) > 0)
+    if showDOL and showDOLOnCurrentTF and (array.size(highLiquidityLines) > 0 or array.size(lowLiquidityLines) > 0)
         table.cell(abbrevTable, 0, row, 'DOL', text_color=color.black, text_size=size.small)
         row += 1
-    if showSessions
+    if showSessions and canShow1H()
         table.cell(abbrevTable, 0, row, 'SESSIONS', text_color=color.black, text_size=size.small)
         row += 1
-    if showPD and not na(pd_high) and not na(pd_low)
+    if showPD and showPDOnCurrentTF and not na(pd_high) and not na(pd_low)
         table.cell(abbrevTable, 0, row, 'PD', text_color=color.black, text_size=size.small)
         row += 1
-    if showRB and (isBullishRB or isBearishRB)
+    if showRB and showRBOnCurrentTF and (isBullishRB or isBearishRB)
         table.cell(abbrevTable, 0, row, 'RB', text_color=color.black, text_size=size.small)
         row += 1
