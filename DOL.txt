@@ -1,0 +1,204 @@
+// This work is licensed under a Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0) https://creativecommons.org/licenses/by-nc-sa/4.0/
+// © PhenLabs
+
+//@version=6
+indicator('Draw on Liquidity [PhenLabs]', overlay = true, shorttitle = 'PhenLabs - DOL')
+
+// =================== Input Parameters ===================  
+// Pivot Configuration  
+var string GROUP_PIVOT = 'Pivot Settings'
+pivotLength = input.int(title = 'Pivot Length', defval = 5, minval = 1, maxval = 50, tooltip = 'Determines how many bars to look back/forward for pivot points. Lower values create more frequent liquidity zones but may include noise. Higher values show only significant zones but may be delayed. Recommended: 3-7 for shorter timeframes, 5-10 for higher timeframes.', group = GROUP_PIVOT)
+
+// Volume Analysis Configuration  
+var string GROUP_VOLUME = 'Volume Analysis'
+volMultiplier = input.float(title = 'Volume Threshold Multiplier', defval = 2.0, minval = 0.1, step = 0.1, tooltip = 'Multiplier for average volume to identify high-volume bars. Higher values (>2.0) show only the most significant volume spikes. Lower values (<2.0) capture more zones but may include less significant levels. Recommended: 1.5-2.5 for normal markets, 2.0-3.0 for volatile markets.', group = GROUP_VOLUME)
+
+volPeriod = input.int(title = 'Volume MA Period', defval = 20, minval = 1, tooltip = 'Period for calculating average volume. Longer periods (>20) provide more stable volume thresholds but may be less reactive. Shorter periods (<20) are more sensitive to recent volume changes. Recommended: 14-30 based on your timeframe.', group = GROUP_VOLUME)
+
+// Visual Settings  
+var string GROUP_VISUALS = 'Visual Settings'
+lineWidth = input.int(title = 'Line Width', defval = 1, minval = 1, maxval = 4, tooltip = 'Thickness of the liquidity lines. Higher values make lines more visible but may clutter the chart. 1: subtle lines, 2: standard visibility, 3-4: emphasized lines.', group = GROUP_VISUALS)
+
+displayMode = input.string(title = 'Display Mode', defval = 'Current', options = ['Historical', 'Current'], tooltip = 'Historical: Shows all past and present liquidity zones, useful for analyzing pattern formation. Current: Only displays active zones, cleaner chart view focused on present opportunities. Choose Historical for analysis, Current for active trading.', group = GROUP_VISUALS)
+
+// Color Settings  
+var string GROUP_COLORS = 'Color Settings'
+highLiquidityColor = input.color(title = 'High Liquidity Level', defval = #2962FF, tooltip = 'Color for high liquidity zones (resistance levels). Choose bright, visible colors that contrast with your chart background but don\'t interfere with other indicators.', group = GROUP_COLORS)
+
+lowLiquidityColor = input.color(title = 'Low Liquidity Level', defval = #ff2727, tooltip = 'Color for low liquidity zones (support levels). Choose a distinct color from high liquidity zones for easy identification. Recommended: Use contrasting colors for high/low zones.', group = GROUP_COLORS)
+
+// Dashboard Settings  
+var string GROUP_DASHBOARD = 'Dashboard Settings'
+proximityThreshold = input.float(title = 'Proximity Threshold (%)', defval = 2, minval = 0.01, maxval = 5.0, step = 0.1, tooltip = 'Percentage distance to consider price near a liquidity level. Lower values (0.5-1.5%) give precise but fewer alerts. Higher values (2-5%) provide earlier warnings but may trigger more frequently.', group = GROUP_DASHBOARD)
+
+dashboardPosition = input.string(title = 'Dashboard Position', defval = 'Top Right', options = ['Top Right', 'Top Left', 'Bottom Right', 'Bottom Left'], tooltip = 'Select the position of the dashboard on your chart', group = GROUP_DASHBOARD)
+
+dashboardBgOpacity = input.int(title = 'Dashboard Background Opacity', defval = 70, minval = 0, maxval = 100, tooltip = 'Set the transparency of the dashboard background (100 = fully transparent, 0 = solid)', group = GROUP_DASHBOARD)
+
+dashboardTextSize = input.string(title = 'Dashboard Text Size', defval = 'Normal', options = ['Tiny', 'Small', 'Normal', 'Large', 'Huge'], tooltip = 'Set the size of text in the dashboard', group = GROUP_DASHBOARD)
+
+// Convert text size string to size.* value  
+var textSize = switch dashboardTextSize
+    'Tiny' => size.tiny
+    'Small' => size.small
+    'Normal' => size.normal
+    'Large' => size.large
+    'Huge' => size.huge
+
+// Convert position string to position.* value  
+var pos = switch dashboardPosition
+    'Top Right' => position.top_right
+    'Top Left' => position.top_left
+    'Bottom Right' => position.bottom_right
+    'Bottom Left' => position.bottom_left
+
+// =================== Calculations ===================  
+// Pivot Points Analysis  
+pivotHigh = ta.pivothigh(high, pivotLength, pivotLength)
+pivotLow = ta.pivotlow(low, pivotLength, pivotLength)
+
+// Volume Analysis  
+averageVolume = ta.sma(volume, volPeriod)
+isHighVolume = volume > volMultiplier * averageVolume
+
+// Liquidity Validation  
+isValidHigh = not na(pivotHigh) and isHighVolume
+isValidLow = not na(pivotLow) and isHighVolume
+
+// =================== Line Management ===================  
+// Arrays for Multiple Lines  
+var array<line> highLiquidityLines = array.new<line>(0)
+var array<line> lowLiquidityLines = array.new<line>(0)
+var array<bool> highLineHit = array.new<bool>(0)
+var array<bool> lowLineHit = array.new<bool>(0)
+
+// Create High Liquidity Lines  
+  
+if isValidHigh  
+    newHighLine = line.new(x1 = bar_index - pivotLength, y1 = pivotHigh, x2 = bar_index, y2 = pivotHigh, color = highLiquidityColor, width = lineWidth, extend = extend.none)  
+    array.push(highLiquidityLines, newHighLine)  
+    array.push(highLineHit, false)  
+
+// Create Low Liquidity Lines  
+if isValidLow  
+    newLowLine = line.new(x1 = bar_index - pivotLength, y1 = pivotLow, x2 = bar_index, y2 = pivotLow, color = lowLiquidityColor, width = lineWidth, extend = extend.none)  
+    array.push(lowLiquidityLines, newLowLine)  
+    array.push(lowLineHit, false)
+
+// Update High Lines  
+if array.size(highLiquidityLines) > 0
+    for i = 0 to array.size(highLiquidityLines) - 1 by 1
+        currentLine = array.get(highLiquidityLines, i)
+        if not array.get(highLineHit, i)
+            if close >= line.get_y1(currentLine)
+                array.set(highLineHit, i, true)
+                if displayMode == 'Current'
+                    line.delete(currentLine)
+            else
+                line.set_x2(currentLine, bar_index)
+
+// Update Low Lines  
+if array.size(lowLiquidityLines) > 0
+    for i = 0 to array.size(lowLiquidityLines) - 1 by 1
+        currentLine = array.get(lowLiquidityLines, i)
+        if not array.get(lowLineHit, i)
+            if close <= line.get_y1(currentLine)
+                array.set(lowLineHit, i, true)
+                if displayMode == 'Current'
+                    line.delete(currentLine)
+            else
+                line.set_x2(currentLine, bar_index)
+
+// =================== Dashboard Calculations ===================  
+// Track nearest levels  
+var float nearestHighLiquidity = na
+var float nearestLowLiquidity = na
+var bool isNearHigh = false
+var bool isNearLow = false
+
+// Reset values  
+nearestHighLiquidity := na
+nearestLowLiquidity := na
+isNearHigh := false
+isNearLow := false
+
+// Find nearest high liquidity level  
+if array.size(highLiquidityLines) > 0
+    for i = array.size(highLiquidityLines) - 1 to 0 by 1
+        if not array.get(highLineHit, i)
+            linePrice = line.get_y1(array.get(highLiquidityLines, i))
+            nearestHighLiquidity := linePrice
+            break
+
+// Find nearest low liquidity level  
+if array.size(lowLiquidityLines) > 0
+    for i = array.size(lowLiquidityLines) - 1 to 0 by 1
+        if not array.get(lowLineHit, i)
+            linePrice = line.get_y1(array.get(lowLiquidityLines, i))
+            nearestLowLiquidity := linePrice
+            break
+
+// Check proximity  
+if not na(nearestHighLiquidity)
+    priceDistance = math.abs(close - nearestHighLiquidity) / close * 100
+    isNearHigh := priceDistance <= proximityThreshold
+    isNearHigh
+
+if not na(nearestLowLiquidity)
+    priceDistance = math.abs(close - nearestLowLiquidity) / close * 100
+    isNearLow := priceDistance <= proximityThreshold
+    isNearLow
+
+// Cleanup arrays periodically (every 100 bars)  
+if bar_index % 100 == 0 and displayMode == 'Current'
+    // Remove hit lines from arrays  
+    if array.size(highLiquidityLines) > 0
+        for i = array.size(highLiquidityLines) - 1 to 0 by 1
+            if array.get(highLineHit, i)
+                array.remove(highLiquidityLines, i)
+                array.remove(highLineHit, i)
+
+    if array.size(lowLiquidityLines) > 0
+        for i = array.size(lowLiquidityLines) - 1 to 0 by 1
+            if array.get(lowLineHit, i)
+                array.remove(lowLiquidityLines, i)
+                array.remove(lowLineHit, i)
+
+// =================== Dashboard Display ===================  
+var table dashboard = table.new(position = pos, columns = 2, rows = 4, bgcolor = color.new(color.black, dashboardBgOpacity), frame_width = 1, frame_color = color.new(color.gray, 50), border_width = 1)
+
+// Update dashboard  
+if barstate.islast
+    // Header  
+    table.cell(dashboard, 0, 0, '𓄀   Liquidity Dashboard', text_color = color.white, bgcolor = #001a7980, text_size = textSize)
+    table.merge_cells(dashboard, 0, 0, 1, 0)
+
+    // High Liquidity Status  
+    table.cell(dashboard, 0, 1, 'High Draw', text_color = color.white, text_size = textSize)
+
+    if na(nearestHighLiquidity)
+        table.cell(dashboard, 1, 1, 'No Level', text_color = color.gray, text_size = textSize)
+    else
+        statusText = isNearHigh ? '🔔 ACTIVE' : 'Waiting'
+        statusColor = isNearHigh ? color.green : color.gray
+        table.cell(dashboard, 1, 1, str.tostring(nearestHighLiquidity, format.mintick) + '\n' + statusText, text_color = statusColor, text_size = textSize)
+
+    // Low Liquidity Status  
+    table.cell(dashboard, 0, 2, 'Low Draw', text_color = color.white, text_size = textSize)
+
+    if na(nearestLowLiquidity)
+        table.cell(dashboard, 1, 2, 'No Level', text_color = color.gray, text_size = textSize)
+    else
+        statusText = isNearLow ? '🔔 ACTIVE' : 'Waiting'
+        statusColor = isNearLow ? color.red : color.gray
+        table.cell(dashboard, 1, 2, str.tostring(nearestLowLiquidity, format.mintick) + '\n' + statusText, text_color = statusColor, text_size = textSize)
+
+    // Current Price  
+    table.cell(dashboard, 0, 3, 'Current Price', text_color = color.white, text_size = textSize)
+    table.cell(dashboard, 1, 3, str.tostring(close, format.mintick), text_color = color.white, text_size = textSize)
+
+// Alert Conditions  
+alertcondition(isNearHigh, title = 'Price Near High Liquidity', message = 'Price is approaching a high liquidity zone')
+alertcondition(isNearLow, title = 'Price Near Low Liquidity', message = 'Price is approaching a low liquidity zone')
+
+My Note: Make sure to change the view from Present to Historical

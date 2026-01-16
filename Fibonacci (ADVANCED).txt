@@ -1,0 +1,1045 @@
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © Giovanni-1-
+
+//@version=5
+indicator(title = 'ICT Premium/Discount' , overlay = true , max_bars_back = 500 , max_lines_count = 500 , max_boxes_count = 500 , max_labels_count = 100)
+
+Timezone = 'America/New_York'
+
+DOMD = timeframe.isdwm
+DOM_240 = (timeframe.multiplier >= 240)
+DOM240 = (timeframe.multiplier <= 240)
+DOM60  = (timeframe.multiplier <= 60)
+DOM40  = (timeframe.multiplier <= 40)
+DOM30  = (timeframe.multiplier <= 30)
+DOM15  = (timeframe.multiplier <= 15)
+DOM5   = (timeframe.multiplier <= 5)
+DOM1   = (timeframe.multiplier <= 1) 
+
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------//
+// Start Range
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------//
+
+//-------------------------------------------------------------
+// -- Functions 
+backtestt(int _start) => 
+    backtestRange = time >= _start and time <= timestamp(year, month, dayofmonth, 23, 59) ? true : false
+    backtestRange
+//-------------------------------------------------------------
+
+start_test = input.time(defval = timestamp('21 Dec 2023 04:59') , title = 'Start Date     ' , inline = '0' , group = 'Start')
+col_start_test = input.color(defval = color.rgb(141, 122, 122, 73) , title = '' , inline = '0' , group = 'Start')
+
+show_range  = input.bool(defval = true , title = 'Show Range     ' , inline = '1' , group = 'Start')
+show_right  = input.bool(defval = false , title = 'Show Right-' , inline = '1' , group = 'Start')
+ext_right   = input.int(defval = 5 , title = 'than on the right' , maxval = 40 , inline = '1' , group = 'Start')
+
+col_Premium = input.color(defval = color.red , title = '' , inline = '2' , group = 'Start')
+col_Discoun = input.color(defval = color.green , title = 'High - Low' , inline = '2' , group = 'Start')
+show_txt_HL = input.bool(defval = true , title = 'Price' , inline = '2' , group = 'Start')
+style_PD    = input.string(defval = line.style_solid , title = '' , options = [line.style_solid , line.style_dashed, line.style_dotted] , inline = '2' , group = 'Start')
+size_ln_PD  = input.int(defval = 2 , title = ' Width' , inline = '2' , group = 'Start') 
+
+show_Midlin  = input(defval = true , title = 'Show Midline' , inline = '3' , group = 'Start')
+col_Midline  = input.color(defval = color.blue , title = '' , inline = '30' , group = 'Start')
+style_Mid    = input.string(defval = line.style_solid , title = '' , options = [line.style_solid , line.style_dashed, line.style_dotted] , inline = '30' , group = 'Start')
+size_ln_Mid  = input(defval = 1 , title = 'Width' , inline = '30' , group = 'Start')
+show_txt_Mid = input.bool(defval = true , title = 'Price' , inline = '30' , group = 'Start')
+
+show_Quarti  = input(defval = false , title = 'Show 75/25 ' , inline = '4' , group = 'Start')
+BG_range     = input.bool(defval = false , title = 'BG' , inline = '4' , group = 'Start')
+col_Quartil  = input.color(defval = color.black , title = '' , inline = '41' , group = 'Start')
+style_Quart  = input.string(defval = line.style_dotted , title = '' , options = [line.style_solid , line.style_dashed, line.style_dotted] , inline = '41' , group = 'Start')
+size_ln_Qua  = input(defval = 1 , title = 'Width' , inline = '41' , group = 'Start')
+show_txt_Qua = input.bool(defval = false , title = 'Price' , inline = '41' , group = 'Start')
+
+show_OTE     = input(defval = false , title = 'Show OTE ' , inline = '5' , group = 'Start')
+chois_range  = input.string(defval = 'Premium' , title = 'Range is' , options = ['Premium' , 'Discount'] , inline = '5' , group = 'Start')
+BG_range_OTE = input.bool(defval = false , title = 'BG' , inline = '5' , group = 'Start')
+col_OTE      = input.color(defval = color.black , title = '' , inline = '51' , group = 'Start')
+style_OTE    = input.string(defval = line.style_solid , title = '' , options = [line.style_solid , line.style_dashed, line.style_dotted] , inline = '51' , group = 'Start')
+size_ln_OTE  = input(defval = 2 , title = 'Width' , inline = '51' , group = 'Start')
+show_txt_OTE = input.bool(defval = false , title = 'Price' , inline = '51' , group = 'Start')
+
+//-------------------------------------------------------------
+is_line_start = year == year(start_test) and month == month(start_test) and dayofmonth == dayofmonth(start_test) and hour == hour(start_test) and minute == minute(start_test)
+var line start_line = na
+if is_line_start
+    start_line := line.new(bar_index , bar_index , bar_index , bar_index + 1 , extend = extend.both , color = col_start_test , style = line.style_dotted)
+plotshape(series = is_line_start , title = '' , style = shape.circle , location = location.bottom , color = color.rgb(120, 123, 134, 100)  , text = 'Start Line' , textcolor = color.new(col_start_test , 80) , size = size.small)
+//-------------------------------------------------------------
+
+//-------------------------------------------------------------
+start_range  = backtestt(start_test)
+start_day    = time('D') == time('D')[1]
+start_track  = start_range
+                  
+reset_range = start_range and not(start_range[1])
+reset_day   = time('D') != time('D')[1]
+reset_res   = reset_range
+
+var _hh = float(na)
+_hh := reset_res ? high : start_track? high > _hh ? high : nz(_hh[1]) : na 
+var _ll = float(na)
+_ll := reset_res ? low  : start_track? low  < _ll ? low  : nz(_ll[1]) : na
+
+var line lineVarHighs = line(na) , var line lineVarLows  = line(na)
+var label Price_high  = label(na) , var label Price_low   = label(na)
+var line lineMid  = line(na) , var label Price_5 = label(na)
+var line line_75  = line(na) , var line line_25   = line(na)
+var label Price_75 = label(na) ,var label Price_25 = label(na)
+var line line_79  = line(na) , var line line_705   = line(na) , var line line_62   = line(na)
+var label Price_79 = label(na) , var label Price_705 = label(na) , var label Price_62 = label(na)
+
+if show_range
+    if reset_res
+        if not show_right
+            lineVarHighs := line.new(bar_index , _hh , last_bar_index , _hh , xloc.bar_index , extend = extend.none , color = col_Premium , width = size_ln_PD , style = style_PD)
+            lineVarLows  := line.new(bar_index , _ll , last_bar_index , _ll , xloc.bar_index , extend = extend.none , color = col_Discoun , width = size_ln_PD , style = style_PD)
+
+        else
+            lineVarHighs := line.new(last_bar_index+50 , _hh , last_bar_index , _hh , xloc.bar_index , extend = extend.none , color = col_Premium , width = size_ln_PD , style = style_PD)
+            lineVarLows  := line.new(last_bar_index+50 , _ll , last_bar_index , _ll , xloc.bar_index , extend = extend.none , color = col_Discoun , width = size_ln_PD , style = style_PD)
+
+        if show_txt_HL
+            Price_high := label.new(x = last_bar_index , y = _hh , text = '' , xloc = xloc.bar_index , yloc = yloc.price , color = na , style = label.style_label_down , textcolor = col_Premium, textalign = text.align_right , tooltip = 'Premium High' )
+            Price_low  := label.new(x = last_bar_index , y = _ll , text = '' , xloc = xloc.bar_index , yloc = yloc.price , color = na , style = label.style_label_center , textcolor = col_Discoun , textalign = text.align_right , tooltip = 'Discount Low')
+
+        if show_Midlin
+            midValue = (_hh + _ll) / 2
+            if not show_right
+                lineMid := line.new(bar_index[1] , midValue , bar_index , midValue , xloc.bar_index , extend = extend.none , color = col_Midline , width = size_ln_Mid , style = style_Mid)
+            else
+                lineMid := line.new(last_bar_index+50 , midValue , bar_index , midValue , xloc.bar_index , extend = extend.none , color = col_Midline , width = size_ln_Mid , style = style_Mid)
+            if show_txt_Mid
+                Price_5 := label.new(x = last_bar_index , y = midValue , text = '' , xloc = xloc.bar_index , yloc = yloc.price , color = na , style = label.style_label_down , textcolor = col_Midline , textalign = text.align_right , tooltip = 'Midline High' )
+
+
+        if show_Quarti
+            Value25 = _hh - 0.25 * (_hh - _ll)
+            Value75 = _hh - 0.75 * (_hh - _ll) 
+            if not show_right
+                line_25 := line.new(bar_index[1] , Value25, bar_index , Value25 , xloc.bar_index , extend = extend.none , color = col_Quartil , width = size_ln_Qua , style = style_Quart)
+                line_75 := line.new(bar_index[1] , Value75, bar_index , Value75 , xloc.bar_index , extend = extend.none , color = col_Quartil , width = size_ln_Qua , style = style_Quart)
+            else
+                line_25 := line.new(last_bar_index+50 , Value25, bar_index , Value25 , xloc.bar_index , extend = extend.none , color = col_Quartil , width = size_ln_Qua , style = style_Quart)
+                line_75 := line.new(last_bar_index+50 , Value75, bar_index , Value75 , xloc.bar_index , extend = extend.none , color = col_Quartil , width = size_ln_Qua , style = style_Quart)
+                    
+            if show_txt_Qua
+                Price_75 := label.new(x = last_bar_index , y = Value75 , text = '' , xloc = xloc.bar_index , yloc = yloc.price , color = na , style = label.style_label_down , textcolor = col_Quartil , textalign = text.align_right)
+                Price_25 := label.new(x = last_bar_index , y = Value25 , text = '' , xloc = xloc.bar_index , yloc = yloc.price , color = na , style = label.style_label_down , textcolor = col_Quartil , textalign = text.align_right)
+        if BG_range
+            linefill.new(lineVarHighs , line_25 , color = color.new(col_Premium,90))
+            linefill.new(line_25 , lineMid , color = color.new(col_Premium,95))
+            linefill.new(lineVarLows , line_75 , color = color.new(col_Discoun,90))
+            linefill.new(line_75 , lineMid , color = color.new(col_Discoun,95))
+
+        if show_OTE
+            Value79  = chois_range == 'Premium' ?  _hh - 0.79 * (_hh - _ll) :  _hh - 0.21 * (_hh - _ll)
+            Value705 = chois_range == 'Premium' ?  _hh - 0.705 * (_hh - _ll) :  _hh - 0.295 * (_hh - _ll)
+            Value62  = chois_range == 'Premium' ?  _hh - 0.62 * (_hh - _ll) :  _hh - 0.38 * (_hh - _ll)
+            if not show_right
+                line_79  := line.new(bar_index[1] , Value79, bar_index , Value79 , xloc.bar_index , extend = extend.none , color = col_OTE , width = size_ln_OTE , style = style_OTE)
+                line_705 := line.new(bar_index[1] , Value705, bar_index , Value705 , xloc.bar_index , extend = extend.none , color = col_OTE , width = size_ln_OTE , style = style_OTE)
+                line_62  := line.new(bar_index[1] , Value62, bar_index , Value62 , xloc.bar_index , extend = extend.none , color = col_OTE , width = size_ln_OTE , style = style_OTE)
+            else
+                line_79  := line.new(last_bar_index+50 , Value79, bar_index , Value79 , xloc.bar_index , extend = extend.none , color = col_OTE , width = size_ln_OTE , style = style_OTE)
+                line_705 := line.new(last_bar_index+50 , Value705, bar_index , Value705 , xloc.bar_index , extend = extend.none , color = col_OTE , width = size_ln_OTE , style = style_OTE)
+                line_62  := line.new(last_bar_index+50 , Value62, bar_index , Value62 , xloc.bar_index , extend = extend.none , color = col_OTE , width = size_ln_OTE , style = style_OTE)
+            if show_txt_OTE
+                Price_705 := label.new(x = last_bar_index , y = Value705 , text = '' , xloc = xloc.bar_index , yloc = yloc.price , color = na , style = label.style_label_down , textcolor = col_OTE , textalign = text.align_right)
+                Price_79  := label.new(x = last_bar_index , y = Value79  , text = '' , xloc = xloc.bar_index , yloc = yloc.price , color = na , style = label.style_label_down , textcolor = col_OTE , textalign = text.align_right)    
+                Price_62  := label.new(x = last_bar_index , y = Value62  , text = '' , xloc = xloc.bar_index , yloc = yloc.price , color = na , style = label.style_label_down , textcolor = col_OTE , textalign = text.align_right)
+        if BG_range_OTE
+            linefill.new(line_79 , line_62 , color = color.new(col_OTE,90))
+ 
+    if start_track
+        //-------
+        line.set_x2(lineVarHighs, show_right ? last_bar_index+ext_right : bar_index)
+        line.set_y1(lineVarHighs, _hh)
+        line.set_y2(lineVarHighs, _hh)
+
+        line.set_x2(lineVarLows, show_right ? last_bar_index+ext_right : bar_index)
+        line.set_y1(lineVarLows, _ll)
+        line.set_y2(lineVarLows, _ll) 
+        
+        //------
+        line.set_x2(lineMid, show_right ? last_bar_index+ext_right : bar_index)
+        line.set_y1(lineMid, (_hh + _ll) / 2)
+        line.set_y2(lineMid, (_hh + _ll) / 2)
+
+        //------
+        line.set_x2(line_25, show_right ? last_bar_index+ext_right : bar_index)
+        line.set_y1(line_25, _hh - 0.25 * (_hh - _ll))
+        line.set_y2(line_25, _hh - 0.25 * (_hh - _ll))
+
+        line.set_x2(line_75, show_right ? last_bar_index+ext_right : bar_index)
+        line.set_y1(line_75, _hh - 0.75 * (_hh - _ll))
+        line.set_y2(line_75, _hh - 0.75 * (_hh - _ll))
+
+        //------
+        line.set_x2(line_79, show_right ? last_bar_index+ext_right : bar_index)
+        line.set_y1(line_79, chois_range == 'Discount' ?  _hh - 0.79 * (_hh - _ll) :  _hh - 0.21 * (_hh - _ll))
+        line.set_y2(line_79, chois_range == 'Discount' ?  _hh - 0.79 * (_hh - _ll) :  _hh - 0.21 * (_hh - _ll))
+
+        line.set_x2(line_705, show_right ? last_bar_index+ext_right : bar_index)
+        line.set_y1(line_705, chois_range == 'Discount' ?  _hh - 0.705 * (_hh - _ll) :  _hh - 0.295 * (_hh - _ll))
+        line.set_y2(line_705, chois_range == 'Discount' ?  _hh - 0.705 * (_hh - _ll) :  _hh - 0.295 * (_hh - _ll))
+
+        line.set_x2(line_62, show_right ? last_bar_index+ext_right : bar_index)
+        line.set_y1(line_62, chois_range == 'Discount' ?  _hh - 0.62 * (_hh - _ll) :  _hh - 0.38 * (_hh - _ll))
+        line.set_y2(line_62, chois_range == 'Discount' ?  _hh - 0.62 * (_hh - _ll) :  _hh - 0.38 * (_hh - _ll))
+    
+    //---Label
+        label.set_x(Price_high, show_right ? bar_index+ext_right+2 : bar_index)
+        label.set_y(Price_high, _hh)
+        label.set_text(Price_high, show_txt_HL ? str.tostring(_hh) : na)
+        label.set_x(Price_low, show_right ? bar_index+ext_right+2 : bar_index)
+        label.set_y(Price_low, _ll)
+        label.set_text(Price_low, show_txt_HL ? str.tostring(_ll) : na)
+
+        //------
+        midValue = (_hh + _ll) / 2
+        label.set_x(Price_5, show_right ? bar_index+ext_right+2 : bar_index)
+        label.set_y(Price_5, midValue)
+        label.set_text(Price_5, show_txt_HL ? str.tostring(midValue) : na)
+
+        //------  
+        Value75 = _hh - 0.75 * (_hh - _ll)
+        label.set_x(Price_75, show_right ? bar_index+ext_right+2 : bar_index)
+        label.set_y(Price_75, Value75)
+        label.set_text(Price_75, show_txt_HL ? str.tostring(Value75) : na)
+        Value25 = _hh - 0.25 * (_hh - _ll)
+        label.set_x(Price_25, show_right ? bar_index+ext_right+2 : bar_index)
+        label.set_y(Price_25, Value25)
+        label.set_text(Price_25, show_txt_HL ? str.tostring(Value25) : na)
+
+        //------
+        Value79 = chois_range == 'Discount' ?  _hh - 0.79 * (_hh - _ll) :  _hh - 0.21 * (_hh - _ll)
+        label.set_x(Price_79, show_right ? bar_index+ext_right+10 : bar_index)
+        label.set_y(Price_79, Value79)
+        label.set_text(Price_79, show_txt_HL ? str.tostring(Value79) : na)
+        Value705 = chois_range == 'Discount' ?  _hh - 0.705 * (_hh - _ll) :  _hh - 0.295 * (_hh - _ll)
+        label.set_x(Price_705, show_right ? bar_index+ext_right+10 : bar_index)
+        label.set_y(Price_705, Value705)
+        label.set_text(Price_705, show_txt_HL ? str.tostring(Value705) : na)
+        Value62 = chois_range == 'Discount' ?  _hh - 0.62 * (_hh - _ll) :  _hh - 0.38 * (_hh - _ll)
+        label.set_x(Price_62, show_right ? bar_index+ext_right+10 : bar_index)
+        label.set_y(Price_62, Value62)
+        label.set_text(Price_62, show_txt_HL ? str.tostring(Value62) : na)
+//-------------------------------------------------------------
+//-------------------------------------------------------------
+
+
+//+------------------------------------------------------------------------------------------------------------+//
+INSIDE_RANGE = input.bool(defval = true , title = '// ------------------INSIDE RANGE----------------- //' )
+//+------------------------------------------------------------------------------------------------------------+//
+
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------//
+// OB
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------//
+
+show_OB  = input.bool(defval = false , title = 'Show OB' , inline = '0' , group = 'OB')
+col_OB_bullish = input.color(defval =color.rgb(0, 255, 0, 90) , title = '',  inline = '0' , group = 'OB')
+col_OB_bearish = input.color(defval =color.rgb(255, 0, 0, 90) , title = '',  inline = '0' , group = 'OB')
+show_BOS = input.bool(defval = false , title = 'Show BOS Lines' , inline = '0' , group = 'OB')
+
+
+var bool BosCandle = false
+
+// tracking for entries
+var int lastDownIndex = 0
+var float lastDown = 0
+var float lastLow = 0
+
+var int lastUpIndex = 0
+var float lastUp = 0
+var float lastUpLow = 0
+var float lastUpOpen = 0
+var float lastHigh = 0
+var float lastBullBreakLow = 0
+
+// structure
+var int structureLowIndex = 0
+float structureLow = 1000000
+
+// order block drawing arrays
+var longBoxes = array.new_box()
+var shortBoxes = array.new_box()
+var bosLines = array.new_line()
+
+var int lastLongIndex = 0
+var int lastShortIndex = 0
+BosCandle := false
+
+// functions
+structureLowIndexPointer(len) =>
+    float minValue = ta.highest(high, 5)[1]
+    int minIndex = bar_index
+    for i = 1 to len by 1
+        if low[i] < minValue
+            minValue := low[i]
+            minIndex := bar_index[i]
+            minIndex
+    minIndex
+
+// get the lowest point in the range
+structureLow := ta.lowest(low, 5)[1]
+structureLowIndex := structureLowIndexPointer(5)
+
+// bearish break of structure
+if INSIDE_RANGE and time >= start_test and ta.crossunder(low, structureLow)
+    if bar_index - lastUpIndex < 1000
+        // add bear order block
+        if show_OB
+            array.push(shortBoxes, box.new(left = lastUpIndex , top = lastHigh , bottom = lastUpLow , right = last_bar_index , bgcolor = col_OB_bearish , border_color = col_OB_bearish , text ='-OB' , text_size = size.tiny , text_color = color.black , text_halign = text.align_right , text_valign = text.align_center ))
+        // add bearish bos line
+        if show_BOS
+            array.push(bosLines, line.new(structureLowIndex, structureLow, bar_index, structureLow, color=color.red, style=line.style_dotted, width=1))
+        // show bos candle
+        BosCandle := true
+        // color mode bear
+        lastShortIndex := lastUpIndex
+        lastShortIndex
+
+// bullish break of structure?
+if INSIDE_RANGE and time >= start_test and array.size(shortBoxes) > 0
+    for i = array.size(shortBoxes) - 1 to 0 by 1
+        box = array.get(shortBoxes, i)
+        top = box.get_top(box)
+        left = box.get_left(box)
+        if close > top
+            // remove the short box 
+            box.delete(box)
+            array.remove(shortBoxes, i)
+            // ok to draw?
+            if bar_index - lastDownIndex < 1000 and bar_index > lastLongIndex
+                // add bullish order block
+                if show_OB
+                    array.push(longBoxes, box.new(left = lastDownIndex , top = lastDown , bottom = lastLow , right = last_bar_index , bgcolor = col_OB_bullish , border_color = col_OB_bullish , text ='+OB' , text_size = size.tiny , text_color = color.black , text_halign = text.align_right , text_valign = text.align_center))
+                // add bullish bos line
+                if show_BOS
+                    array.push(bosLines, line.new(left, top, bar_index, top, color=color.green, style=line.style_dotted, width=1))
+                // show bos candle
+                BosCandle := true
+                // record last bull bar index to prevent duplication
+                lastLongIndex := bar_index
+                lastBullBreakLow := low
+                lastBullBreakLow
+
+// remove LL if close below
+if INSIDE_RANGE and time >= start_test and  array.size(longBoxes) > 0
+    for i = array.size(longBoxes) - 1 to 0 by 1
+        lbox = array.get(longBoxes, i)
+        bottom = box.get_bottom(lbox)
+        top = box.get_top(lbox)
+        if close < bottom
+            array.remove(longBoxes, i)
+            box.delete(lbox)
+
+// record last up and down candles
+if INSIDE_RANGE and time >= start_test and close < open
+    lastDown := high
+    lastDownIndex := bar_index
+    lastLow := low
+    lastLow
+
+if INSIDE_RANGE and time >= start_test and close > open
+    lastUp := close
+    lastUpIndex := bar_index
+    lastUpOpen := open
+    lastUpLow := low
+    lastHigh := high
+    lastHigh
+
+// update last high/low for more accurate order block placements
+lastHigh := high > lastHigh ? high : lastHigh
+lastLow := low < lastLow ? low : lastLow
+
+
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------//
+// VIB/GAP
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------//
+
+showVImbalance   = input.bool(defval = false , title = 'VIB only inside Range' , inline = '00' , group = 'VIB/GAP')
+col_border_VIB = input.color(defval = color.new(#fbc02d, 100) , title =  'Border'  , inline = '01' , group = 'VIB/GAP')
+col_BG_VIB     = input.color(defval = color.new(#fbc02d, 85) , title =  'BG', inline = '01' , group = 'VIB/GAP')
+numberOfZonesInput = input.int(defval = 3 , title =  'Max Number of VIB', minval = 1 , maxval = 500 , inline = '01' , group = 'VIB/GAP')
+
+
+show_GAP       = input.bool(defval = true , title = 'GAP outside and inside Range' , inline = '0' , group = 'VIB/GAP')
+col_border_GAP = input.color(defval = color.new(color.red, 100) , title =  'Border'  , inline = '1' , group = 'VIB/GAP')
+col_BG_GAP     = input.color(defval = color.new(color.red, 80) , title =  'BG', inline = '1' , group = 'VIB/GAP')
+no_fill        = input.bool(defval = true , title = 'Extend No Fill' , inline = '1' , group = 'VIB/GAP')
+
+limit_search      = input.bool(defval = false , title =  'Max bars backs' , inline = 'Length Limit', inline = '1' , group = 'VIB/GAP')
+limit_search_bars = input.int(defval = 300 , title = '' , inline = '' , minval = 1 , inline = '1' , group = 'VIB/GAP')
+limit_GAP_box     = input.int(defval = 150 , title =  'Max Number of Gaps', minval = 1, maxval = 500 , inline = '1' , group = 'VIB/GAP')
+minimalDeviationInput = 00.0 / 100 * ta.sma(high-low, 14)
+
+// ———————————————————— Volume Imbalances ———————————————————— 
+var bool varImbBull = na
+if INSIDE_RANGE and time >= start_test and (open[0] > open[1])
+    if (close[0] > close[1])
+        if (open[0] > close[1])
+            if (low[0] <= close[1])
+                if (close[0] > open[0])
+                    varImbBull := true
+                else
+                    varImbBull := false 
+            else
+                varImbBull := false 
+        else
+            varImbBull := false
+    else   
+        varImbBull := false
+else
+    varImbBull := false
+
+var bool varImbBear = na
+if INSIDE_RANGE and time >= start_test and (open[0] < open[1])
+    if (close[0] < close[1])
+        if (open[0] < close[1])
+            if (close[1] <= high[0])
+                if (close[0] < open[0])
+                    varImbBear := true
+                else
+                    varImbBear := false 
+            else
+                varImbBear := false
+        else
+            varImbBear := false
+    else   
+        varImbBear := false
+else
+    varImbBear := false
+
+_extend = timeframe.isdwm ? 200* 3600000 : timeframe.period == '240' ? 50* 3600000 : timeframe.period == '60' ? 30* 3600000 : timeframe.multiplier <= 15 ? 10 * 3600000 : 30 * 3600000
+var box[] ImbBoxes = array.new_box()
+var bool[] ImbType = array.new_bool()
+if varImbBear and showVImbalance
+    array.push(ImbBoxes, box.new(left = time[1] , top = close[1] , right = time + _extend , bottom = open[0] , extend = extend.none , xloc = xloc.bar_time, border_color = col_border_VIB , bgcolor = col_BG_VIB))
+    array.push(ImbType, true)
+
+
+if varImbBull and showVImbalance
+    array.push(ImbBoxes, box.new(left = time[1] , top = close[1] , right = time + _extend , bottom = open[0] , extend = extend.none , xloc = xloc.bar_time, border_color = col_border_VIB , bgcolor = col_BG_VIB))
+    array.push(ImbType, false)
+
+// limit number of boxes allowed
+if array.size(ImbBoxes) > numberOfZonesInput
+    box.delete(array.shift(ImbBoxes))
+    array.shift(ImbType)
+
+// ———————————————————— Gap Imbalances ———————————————————— 
+type Gap
+    bool isActive
+    bool isBull
+    array<box> boxes
+
+//@function Deletes all of the boxes that were drawn to represent the gap.
+method delete(Gap this) =>
+    for _box in this.boxes
+        _box.delete()
+
+//@function Closes the gap partially, stopping the previous box and creating a new, smaller box to continue the gap instead.
+method partialClose(Gap this) =>
+    activeBox = this.boxes.last()
+    activeBox.set_extend(extend.none)
+
+    top = this.isBull ? activeBox.get_top() : low
+    bottom = this.isBull ? high : activeBox.get_bottom()
+
+    this.boxes.push(box.new(bar_index , top , bar_index , bottom , border_color = col_border_GAP ,  bgcolor = col_BG_GAP))
+    
+//@function Closes the gap fully, stopping the box from being extended.
+method fullClose(Gap this) =>
+    activeBox = this.boxes.last()
+    activeBox.set_extend(extend.none)
+    this.isActive := false
+    if no_fill
+        activeBox.delete()    
+
+method checkForClose(Gap this) =>
+    if this.isActive
+        activeBox = this.boxes.last()
+        top = activeBox.get_top() 
+        bot = activeBox.get_bottom()
+        isBull = this.isBull
+        activeBox.set_right(bar_index)
+
+        if (high > bot and isBull) or (low < top and not isBull)
+            if no_fill
+                this.partialClose()                
+            else
+                this.fullClose()
+
+        bool forceCloseBoxExceededLengthLimit = (limit_search and bar_index - activeBox.get_left() >= limit_search_bars)
+        if ((high > top and isBull) or (low < bot and not isBull)) or forceCloseBoxExceededLengthLimit
+            this.fullClose()
+
+var allGaps = array.new<Gap>()
+// Detect gaps.
+isGapDown = high < low[1] and low[1] - high >= minimalDeviationInput
+isGapUp = low > high[1] and low - high[1] >= minimalDeviationInput
+isGap = isGapDown or isGapUp
+boxBorderColor = col_border_GAP
+boxBgcolor = col_BG_GAP
+
+registerNewGap(bool isGapDown) => 
+    if show_GAP
+        newBox = box.new(bar_index - 1 , (isGapDown ? low[1] : low) , bar_index , (isGapDown ? high : high[1]) , border_color = boxBorderColor , bgcolor = boxBgcolor , extend = extend.right)
+        allGaps.push(Gap.new(true, isGapDown, array.from(newBox)))
+
+    if allGaps.size() > limit_GAP_box
+        allGaps.shift().delete()
+
+// Detect covering of gaps.
+for gap in allGaps
+    gap.checkForClose()
+
+// Add a box for each new gap, removing the oldest one if needed.
+if isGap    
+    registerNewGap(isGapDown)
+// ———————————————————————————————————————————————————————————
+
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------//
+// FVG
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------//
+
+type Settings 
+    bool    CE_show
+    string  CE_style
+    color   CE_color   
+    bool    fra_show
+    string  fra_style
+    color   fra_color
+    bool    Border_show
+    bool    mitigated_show
+    string  mitigated_type
+    color   mitigated_color
+    bool    mitigated_CE_show
+    color   mitigated_CE_color
+    string  mitigated_CE_style
+    bool    mitigated_fra_show
+    color   mitigated_fra_color    
+    string  mitigated_fra_style
+    bool    ltf_hide
+    bool    label_show
+    color   label_color
+    color   label_bgcolor
+    string  label_size
+    int     padding
+    int     buffer
+
+type Imbalance_Settings
+    bool    show
+    string  htf
+    color   color_bull
+    color   color_bear
+    int     max_count
+
+type Imbalance
+    int     open_time
+    int     close_time
+    float   open
+    float   middle
+    float   mid_25 
+    float   mid_75
+    float   close_up_75
+    float   close_dn_75
+    float   close
+    bool    mitigated
+    int     mitigated_time
+    line    line_middle
+    line    line_25
+    line    line_75
+    label   lbl
+    box     box
+
+type ImbalanceStructure
+    Imbalance[]         imbalance
+    Imbalance_Settings  settings
+
+type Helper
+    string name         = 'Helper'
+
+//+------------------------------------------------------------------------------------------------------------+//
+//+--- Settings                                                                                             ---+//
+//+------------------------------------------------------------------------------------------------------------+//
+
+Settings settings                   = Settings.new()
+Imbalance_Settings HTF_1_Settings   = Imbalance_Settings.new()
+Imbalance_Settings HTF_2_Settings   = Imbalance_Settings.new()
+Imbalance_Settings HTF_3_Settings   = Imbalance_Settings.new()
+Imbalance_Settings HTF_4_Settings   = Imbalance_Settings.new()
+Imbalance_Settings HTF_5_Settings   = Imbalance_Settings.new()
+Imbalance_Settings HTF_6_Settings   = Imbalance_Settings.new()
+
+string tooltip1 = 'HTF FVG Settings:\n\tShow/Hide timeframe\n\tTimeframe to display\n\tBullish FVG Color\n\tBearish FVG Color\n\tMaximum number of FVGs to display'
+string tooltip2 = 'Mitigated FVG Settings:\n\tShow/Hide mitigated (Applies to all).\n\tBullish FVG Color\n\tBearish FVG Color\n\tWhen to mark it as mitigated (Based on HTF timeframe, not current timeframe)'
+
+settings.ltf_hide         := input.bool(defval = false , title = 'Hide Lower Timeframes' , inline = '0' , group = 'FVG INSIDE')
+settings.Border_show      := input.bool(defval = false , title = 'Show Border' , inline = '0' , group = 'FVG INSIDE')
+
+HTF_1_Settings.show       := input.bool(defval = true , title = '' , inline = 'htf1', group = 'FVG INSIDE')
+htf_1                      = input.timeframe(defval = '' , title = '', inline='htf1' , group = 'FVG INSIDE')
+HTF_1_Settings.htf        := htf_1
+HTF_1_Settings.color_bull := input.color(defval = color.new(color.white , 80) , title =  '', inline = 'htf1' , group = 'FVG INSIDE')
+HTF_1_Settings.color_bear := input.color(defval = color.new(color.white , 80) , title =  '', inline = 'htf1' , group = 'FVG INSIDE')
+HTF_1_Settings.max_count  := input.int(defval = 5 , title =  '' , inline = 'htf1' , group = 'FVG INSIDE' , tooltip = tooltip1)
+
+settings.CE_show                := input.bool(defval = true , title = 'Show C.E.' , inline='3' , group = 'FVG INSIDE')
+settings.CE_color               := input.color(defval = color.new(color.white , 0) , title = '' , inline = '3' , group='FVG INSIDE')
+settings.CE_style               := input.string(defval = '----', title = '', options = ['⎯⎯⎯', '----', '····'] , inline='3' , group = 'FVG INSIDE')
+settings.fra_show               := input.bool(defval = true , title = 'Show 75-25%' , inline = '4' , group = 'FVG INSIDE')
+settings.fra_color              := input.color(defval = color.new(color.black,60) , title = '' , inline = '4' , group = 'FVG INSIDE')
+settings.fra_style              := input.string(defval = '····' , title = '' , options = ['⎯⎯⎯', '----', '····'] , inline = '4' , group = 'FVG INSIDE')
+
+settings.label_show             := input.bool(defval = true , title = 'Show Label' , inline = '00' , group = 'FVG INSIDE')
+settings.label_color            := input.color(defval = color.new(color.black, 10) , title = '' , inline = '00' , group = 'FVG INSIDE')
+settings.label_bgcolor          := input.color(defval = color.new(color.white, 100) , title = '' , inline = '00' , group = 'FVG INSIDE')
+settings.label_size             := input.string(defval = size.large , title = '' , options = [size.tiny , size.small , size.normal , size.large , size.huge] , inline = '00' , group = 'FVG INSIDE')
+settings.padding                := input.int(defval = 0 , title = 'Distance from current candle' , minval = 0  , inline = '01' , group = 'FVG INSIDE')
+settings.buffer                 := input.int(defval = 1 , title = 'Spacing between timeframes' , minval = 0  , inline = '02' , group = 'FVG INSIDE')
+
+settings.mitigated_show         := input.bool(defval = true , title = 'Show Inversion FVG' , inline = '0', group = 'Inversion')
+settings.mitigated_color        := input.color(defval = color.new(color.gray , 90) , title = '' , inline = '0' , group = 'Inversion')
+settings.mitigated_CE_show      := input.bool(defval = true , title = 'C.E.'  , inline = '1' , group = 'Inversion')
+settings.mitigated_CE_color     := input.color(defval = color.new(color.black,0) , title = '' , inline = '1' , group = 'Inversion')
+settings.mitigated_CE_style     := input.string(defval = '⎯⎯⎯', title = '', options = ['⎯⎯⎯', '----', '····'] , inline = '1' , group = 'Inversion')
+settings.mitigated_fra_show     := input.bool(defval = false , title = '75-25%' , inline = '2' , group = 'Inversion')
+settings.mitigated_fra_color    := input.color(defval = color.new(color.black,60) , title = '' , inline = '2' , group = 'Inversion')
+settings.mitigated_fra_style    := input.string(defval = '····' , title = '' , options = ['⎯⎯⎯', '----', '····'] , inline = '2' , group = 'Inversion')
+settings.mitigated_type         := 'Body filled'
+
+//+------------------------------------------------------------------------------------------------------------+//
+OUTSIDE_RANGE = input.bool(defval = true , title = '// ------------------OUTSIDE RANGE----------------- //' )
+//+------------------------------------------------------------------------------------------------------------+//
+
+HTF_2_Settings.show       := input.bool(defval = false  , title =  '', inline = 'htf2' , group = 'FVG OUTSIDE')
+htf_2                      = input.timeframe(defval = '15'  , title =  '' , inline = 'htf2' , group = 'FVG OUTSIDE')
+HTF_2_Settings.htf        := htf_2
+HTF_2_Settings.color_bull := input.color(defval = color.new(#00332a, 86)  , title = '', inline='htf2' , group = 'FVG OUTSIDE')
+HTF_2_Settings.color_bear := input.color(defval = color.new(#00332a, 86) , title =  '', inline='htf2' , group = 'FVG OUTSIDE')
+HTF_2_Settings.max_count  := input.int(defval = 10 , title =  '', inline = 'htf2'  , group = 'FVG OUTSIDE' , tooltip = tooltip1)
+
+HTF_3_Settings.show       := input.bool(defval = false  , title =  '', inline = 'htf3' , group = 'FVG OUTSIDE')
+htf_3                      = input.timeframe(defval = '60'  , title =  '' , inline = 'htf3' , group = 'FVG OUTSIDE')
+HTF_3_Settings.htf        := htf_3
+HTF_3_Settings.color_bull := input.color(defval = color.new(#00332a, 86)  , title = '', inline='htf3' , group = 'FVG OUTSIDE')
+HTF_3_Settings.color_bear := input.color(defval = color.new(#00332a, 86) , title =  '', inline='htf3' , group = 'FVG OUTSIDE')
+HTF_3_Settings.max_count  := input.int(defval = 10 , title =  '', inline = 'htf3'  , group = 'FVG OUTSIDE' , tooltip = tooltip1)
+
+HTF_4_Settings.show       := input.bool(defval = false  , title =  '', inline = 'htf4' , group = 'FVG OUTSIDE')
+htf_4                      = input.timeframe(defval = '240'  , title =  '' , inline = 'htf4' , group = 'FVG OUTSIDE')
+HTF_4_Settings.htf        := htf_4
+HTF_4_Settings.color_bull := input.color(defval = color.new(#00332a, 86)  , title = '', inline='htf4' , group = 'FVG OUTSIDE')
+HTF_4_Settings.color_bear := input.color(defval = color.new(#00332a, 86) , title =  '', inline='htf4' , group = 'FVG OUTSIDE')
+HTF_4_Settings.max_count  := input.int(defval = 5 , title =  '', inline = 'htf4'  , group = 'FVG OUTSIDE' , tooltip = tooltip1)
+
+//+------------------------------------------------------------------------------------------------------------+//
+//+--- Variables                                                                                            ---+//
+//+------------------------------------------------------------------------------------------------------------+//
+color color_transparent             = #ffffff00
+
+Helper helper                       = Helper.new()
+
+var ImbalanceStructure FVG_1        = ImbalanceStructure.new()
+var ImbalanceStructure FVG_2        = ImbalanceStructure.new()
+var ImbalanceStructure FVG_3        = ImbalanceStructure.new()
+var ImbalanceStructure FVG_4        = ImbalanceStructure.new()
+
+var Imbalance[] FVGs_1              = array.new<Imbalance>()
+var Imbalance[] FVGs_2              = array.new<Imbalance>()
+var Imbalance[] FVGs_3              = array.new<Imbalance>()
+var Imbalance[] FVGs_4              = array.new<Imbalance>()
+
+FVG_1.imbalance                     := FVGs_1
+FVG_1.settings                      := HTF_1_Settings
+FVG_2.imbalance                     := FVGs_2
+FVG_2.settings                      := HTF_2_Settings
+FVG_3.imbalance                     := FVGs_3
+FVG_3.settings                      := HTF_3_Settings
+FVG_4.imbalance                     := FVGs_4
+FVG_4.settings                      := HTF_4_Settings
+
+//Used internally for padding
+var int TF_1 = 0
+var int TF_2 = 0
+var int TF_3 = 0
+var int TF_4 = 0
+
+//+------------------------------------------------------------------------------------------------------------+//
+//+--- Methods                                                                                              ---+//
+//+------------------------------------------------------------------------------------------------------------+//
+method LineStyle(Helper helper, string style) =>
+    helper.name := style
+    out = switch style
+        '----' => line.style_dashed
+        '····' => line.style_dotted
+        => line.style_solid
+    out
+
+method Gethtftext(Helper helper, string htf) =>
+    helper.name := htf
+    formatted = htf
+    seconds = timeframe.in_seconds(htf)
+
+    if seconds < 60
+        formatted := str.tostring(seconds) + 's'
+    else if (seconds / 60) < 60
+        formatted := str.tostring((seconds/60)) + 'm'
+    else if (seconds/60/60) < 24
+        formatted := str.tostring((seconds/60/60)) + 'H'
+    formatted
+
+method Validtimeframe(Helper helper, tf) =>
+    helper.name := tf
+    n1 = timeframe.in_seconds()
+    n2 = timeframe.in_seconds(tf)
+    n1 <= n2
+
+//+------------------------------------------------------------------------------------------------------------+//
+//+--- Imbalances Methods                                                                                   ---+//
+//+------------------------------------------------------------------------------------------------------------+//
+// AddZone is used to display and manage imbalance related boxes
+method AddZone(ImbalanceStructure IS, Imbalance imb) =>
+    if IS.settings.show
+        int buffer = time+((time-time[1])*(settings.padding+1+(settings.buffer)))
+        isBeforeOrAtTestStart = time <= start_test
+        isAfterOrAtTestStart  = time >= start_test
+        if na(imb.box)
+            imb.box := box.new(imb.open_time, imb.open, buffer, imb.close, settings.Border_show ? imb.open < imb.close ? color.new(IS.settings.color_bull, color.t(IS.settings.color_bull)/ 3) : color.new(IS.settings.color_bear, color.t(IS.settings.color_bear)/ 3) : color_transparent, settings.Border_show ? 1 : 0, bgcolor = imb.open < imb.close ? IS.settings.color_bull : IS.settings.color_bear, xloc=xloc.bar_time)
+            if settings.label_show
+                imb.lbl := label.new(buffer, imb.middle, text=helper.Gethtftext(IS.settings.htf), xloc=xloc.bar_time, textcolor=settings.label_color, style=label.style_label_left, color=settings.label_bgcolor, size = settings.label_size)
+            if settings.CE_show
+                imb.line_middle := line.new(imb.open_time, imb.middle, buffer, imb.middle, xloc=xloc.bar_time, style=helper.LineStyle(settings.CE_style), color=settings.CE_color)
+            if settings.fra_show
+                imb.line_25 := line.new(imb.open_time, imb.mid_25, buffer, imb.mid_25, xloc=xloc.bar_time, style=helper.LineStyle(settings.fra_style), color=settings.fra_color)
+                imb.line_75 := line.new(imb.open_time, imb.mid_75, buffer, imb.mid_75, xloc=xloc.bar_time, style=helper.LineStyle(settings.fra_style), color=settings.fra_color)     
+
+        else
+            box.set_right(imb.box, imb.mitigated ? imb.mitigated_time : buffer)
+            box.set_bgcolor(imb.box, imb.open < imb.close ? imb.mitigated ? settings.mitigated_color : IS.settings.color_bull : imb.mitigated ? settings.mitigated_color : IS.settings.color_bear)
+            box.set_border_color(imb.box, settings.Border_show ? imb.open < imb.close ? color.new(settings.mitigated_color, color.t(settings.mitigated_color)/ 3) : color.new(settings.mitigated_color, color.t(settings.mitigated_color)/ 3) : color_transparent)
+            label.delete(imb.lbl)
+
+            if settings.CE_show and isAfterOrAtTestStart
+                line.set_color(imb.line_middle , color.new(settings.mitigated_color , 100))
+                if settings.mitigated_CE_show 
+                    line.set_x2(imb.line_middle, imb.mitigated ? imb.mitigated_time : buffer)
+                    line.set_color(imb.line_middle , settings.mitigated_CE_color)
+                    line.set_style(imb.line_middle , helper.LineStyle(settings.mitigated_CE_style))
+
+            if settings.fra_show and isAfterOrAtTestStart
+                line.set_color(imb.line_75 , color.new(settings.mitigated_color , 100))
+                line.set_color(imb.line_25 , color.new(settings.mitigated_color , 100))
+                if settings.mitigated_fra_show 
+                    line.set_x2(imb.line_25, imb.mitigated ? imb.mitigated_time : buffer)
+                    line.set_x2(imb.line_75, imb.mitigated ? imb.mitigated_time : buffer)
+                    line.set_color(imb.line_25 , settings.mitigated_fra_color)
+                    line.set_color(imb.line_75 , settings.mitigated_fra_color)     
+
+        if imb.mitigated and INSIDE_RANGE  
+            if isAfterOrAtTestStart and not settings.mitigated_show 
+                box.delete(imb.box)
+                line.delete(imb.line_middle)
+                line.delete(imb.line_25)
+                line.delete(imb.line_75)
+                label.delete(imb.lbl)
+            else if isBeforeOrAtTestStart and settings.mitigated_show
+                box.set_bgcolor(imb.box, color.new(settings.mitigated_color , 100))
+                box.set_border_color(imb.box, color.new(settings.mitigated_color , 100))
+                box.delete(imb.box)
+                line.delete(imb.line_middle)
+                line.delete(imb.line_25)
+                line.delete(imb.line_75)
+                label.delete(imb.lbl)
+    IS
+
+// AddImbalance adds a newly discovered imbalance. this applies for both FVG and Volume Imbalance
+method AddImbalance(ImbalanceStructure IS, float o, float c, int o_time) =>
+    Imbalance imb = Imbalance.new()
+    imb.open_time           := o_time
+    imb.open                := o
+    imb.middle              := (o+c)/2
+    imb.mid_25              := c+(o-c)*0.25
+    imb.mid_75              := c+(o-c)*0.75 
+    imb.close               := c
+
+    IS.imbalance.unshift(imb)
+    IS.AddZone(imb)
+
+    if  INSIDE_RANGE and time >= start_test and IS.imbalance.size() > IS.settings.max_count
+        temp = IS.imbalance.pop()
+        box.delete(temp.box)
+        line.delete(temp.line_middle)
+        line.delete(temp.line_25)
+        line.delete(temp.line_75)
+        label.delete(temp.lbl)
+    IS
+
+method AddImbalance_O(ImbalanceStructure IS, float o, float c, int o_time) =>
+    Imbalance imb = Imbalance.new()
+    imb.open_time           := o_time
+    imb.open                := o
+    imb.middle              := (o+c)/2
+    imb.mid_25              := c+(o-c)*0.25
+    imb.mid_75              := c+(o-c)*0.75 
+    imb.close               := c
+
+    IS.imbalance.unshift(imb)
+    IS.AddZone(imb)
+
+    if OUTSIDE_RANGE and time <= start_test and IS.imbalance.size() > IS.settings.max_count
+        temp = IS.imbalance.pop()
+        box.delete(temp.box)
+        line.delete(temp.line_middle)
+        line.delete(temp.line_25)
+        line.delete(temp.line_75)
+        label.delete(temp.lbl)
+    IS
+
+// CheckMitigated checks if the imbalance has been mitigated based on the settings
+method CheckMitigated(ImbalanceStructure IS, o, h, l, c) =>
+    if IS.imbalance.size() > 0
+        for i = IS.imbalance.size() - 1 to 0
+            imb = IS.imbalance.get(i)
+
+            if not imb.mitigated
+                switch settings.mitigated_type
+                    'Body filled' =>
+                        imb.mitigated       := imb.open < imb.close ? math.min(o, c) <= imb.open : math.max(o, c) >= imb.open
+                    
+                if imb.mitigated
+                    if not settings.mitigated_show
+                        box.delete(imb.box)
+                        line.delete(imb.line_middle)
+                        line.delete(imb.line_25)
+                        line.delete(imb.line_75)
+                        label.delete(imb.lbl)
+                        IS.imbalance.remove(i)
+                    else
+                        if IS.settings.max_count
+                            imb.mitigated_time  := time
+                            IS.AddZone(imb)
+    IS
+method CheckMitigated_O(ImbalanceStructure IS, o, h, l, c) =>
+    if IS.imbalance.size() > 0
+        for i = IS.imbalance.size() - 1 to 0
+            imb = IS.imbalance.get(i)
+
+            if not imb.mitigated
+                switch settings.mitigated_type
+                    'Body filled' =>
+                        imb.mitigated       := imb.open < imb.close ? math.min(o, c) <= imb.open : math.max(o, c) >= imb.open
+                    
+                if imb.mitigated
+                    isBeforeOrAtTestStart = time <= start_test
+                    if not settings.mitigated_show and isBeforeOrAtTestStart
+                        box.delete(imb.box)
+                        line.delete(imb.line_middle)
+                        line.delete(imb.line_25)
+                        line.delete(imb.line_75)
+                        label.delete(imb.lbl)
+                        IS.imbalance.remove(i)
+                    else
+                        if IS.settings.max_count
+                            box.delete(imb.box)
+                            line.delete(imb.line_middle)
+                            line.delete(imb.line_25)
+                            line.delete(imb.line_75)
+                            label.delete(imb.lbl)
+                            IS.imbalance.remove(i)
+    IS
+
+method AdjustMargins(ImbalanceStructure IS, int step) =>
+    if INSIDE_RANGE and IS.imbalance.size() > 0
+        int buffer = time+((time-time[1])*(settings.padding+1+(settings.buffer*(step-1))))
+        for i = IS.imbalance.size() - 1 to 0
+            imb = IS.imbalance.get(i)
+            box.set_right(imb.box, buffer)
+            label.set_x(imb.lbl, buffer)
+            if settings.CE_show
+                line.set_x2(imb.line_middle, buffer)
+            if settings.fra_show
+                line.set_x2(imb.line_25, buffer)
+                line.set_x2(imb.line_75, buffer)
+    IS
+
+
+// FindImbalance looks for imbalances and, if found, adds it to the list
+method FindImbalance(ImbalanceStructure IS, o, h, l, c, t, o1, h1, l1, c1, t1, o2, h2, l2, c2, t2) =>
+    if INSIDE_RANGE and time >= start_test and IS.settings.show and (h < l2 or l > h2) 
+        o = h < l2 ? l2 : h2
+        c = h < l2 ? h : l
+        IS.AddImbalance(o, c, t2)
+    IS
+
+method Process(ImbalanceStructure IS, float o, float h, float l, float c, int t, float o1, float h1, float l1, float c1, int t1, float o2, float h2, float l2, float c2, int t2, bool confirmed) =>
+    var int visible = 0
+    if INSIDE_RANGE and time >= start_test and IS.settings.show and confirmed
+        if not settings.ltf_hide or (settings.ltf_hide and helper.Validtimeframe(IS.settings.htf))
+            if ta.change(time(IS.settings.htf)) and IS.settings.show
+                IS.FindImbalance(o, h, l, c, t, o1, h1, l1, c1, t1, o2, h2, l2, c2, t2)
+                visible := 1
+            IS.CheckMitigated(o, h, l, c)
+    visible
+
+method FindImbalance_O(ImbalanceStructure IS, o, h, l, c, t, o1, h1, l1, c1, t1, o2, h2, l2, c2, t2) =>
+    if OUTSIDE_RANGE and time <= start_test and IS.settings.show and (h < l2 or l > h2) 
+        o = h < l2 ? l2 : h2
+        c = h < l2 ? h : l
+        IS.AddImbalance_O(o, c, t2)
+    IS
+
+method Process_O(ImbalanceStructure IS, float o, float h, float l, float c, int t, float o1, float h1, float l1, float c1, int t1, float o2, float h2, float l2, float c2, int t2, bool confirmed) =>
+    var int visible = 0
+    if OUTSIDE_RANGE and IS.settings.show and confirmed
+        if not settings.ltf_hide or (settings.ltf_hide and helper.Validtimeframe(IS.settings.htf))
+            if ta.change(time(IS.settings.htf)) and IS.settings.show
+                IS.FindImbalance_O(o, h, l, c, t, o1, h1, l1, c1, t1, o2, h2, l2, c2, t2)
+                visible := 1
+            IS.CheckMitigated_O(o, h, l, c)
+    visible
+
+//+------------------------------------------------------------------------------------------------------------+//
+//+--- Main call to start the process                                                                       ---+//
+//+------------------------------------------------------------------------------------------------------------+//
+
+[o_1, h_1, l_1, c_1, t_1, confirmed] = request.security(syminfo.tickerid, htf_1, [open, high, low, close, time, barstate.isconfirmed])
+[o1_1, h1_1, l1_1, c1_1, t1_1] = request.security(syminfo.tickerid, htf_1, [open[1], high[1], low[1], close[1], time[1]])
+[o2_1, h2_1, l2_1, c2_1, t2_1] = request.security(syminfo.tickerid, htf_1, [open[2], high[2], low[2], close[2], time[2]])
+TF_1 := FVG_1.Process(o_1, h_1, l_1, c_1, t_1, o1_1, h1_1, l1_1, c1_1, t1_1, o2_1, h2_1, l2_1, c2_1, t2_1, confirmed)
+if barstate.isconfirmed and INSIDE_RANGE and time >= start_test
+    FVG_1.AdjustMargins(TF_1)
+
+[o_2, h_2, l_2, c_2, t_2, confirmed_2] = request.security(syminfo.tickerid, htf_2, [open, high, low, close, time, barstate.isconfirmed])
+[o1_2, h1_2, l1_2, c1_2, t1_2] = request.security(syminfo.tickerid, htf_2, [open[1], high[1], low[1], close[1], time[1]])
+[o2_2, h2_2, l2_2, c2_2, t2_2] = request.security(syminfo.tickerid, htf_2, [open[2], high[2], low[2], close[2], time[2]])
+TF_2 := TF_1 + FVG_2.Process_O(o_2, h_2, l_2, c_2, t_2, o1_2, h1_2, l1_2, c1_2, t1_2, o2_2, h2_2, l2_2, c2_2, t2_2, confirmed_2)
+if barstate.isconfirmed and OUTSIDE_RANGE
+    FVG_2.AdjustMargins(TF_2)
+
+[o_3, h_3, l_3, c_3, t_3, confirmed_3] = request.security(syminfo.tickerid, htf_3, [open, high, low, close, time, barstate.isconfirmed])
+[o1_3, h1_3, l1_3, c1_3, t1_3] = request.security(syminfo.tickerid, htf_3, [open[1], high[1], low[1], close[1], time[1]])
+[o3_3, h3_3, l3_3, c3_3, t3_3] = request.security(syminfo.tickerid, htf_3, [open[2], high[2], low[2], close[2], time[2]])
+TF_3 := TF_1 + FVG_3.Process_O(o_3, h_3, l_3, c_3, t_3, o1_3, h1_3, l1_3, c1_3, t1_3, o3_3, h3_3, l3_3, c3_3, t3_3, confirmed_3)
+if barstate.isconfirmed and OUTSIDE_RANGE
+    FVG_3.AdjustMargins(TF_3)
+
+[o_4, h_4, l_4, c_4, t_4, confirmed_4] = request.security(syminfo.tickerid, htf_4, [open, high, low, close, time, barstate.isconfirmed])
+[o1_4, h1_4, l1_4, c1_4, t1_4] = request.security(syminfo.tickerid, htf_4, [open[1], high[1], low[1], close[1], time[1]])
+[o4_4, h4_4, l4_4, c4_4, t4_4] = request.security(syminfo.tickerid, htf_4, [open[2], high[2], low[2], close[2], time[2]])
+TF_4 := TF_1 + FVG_4.Process_O(o_4, h_4, l_4, c_4, t_4, o1_4, h1_4, l1_4, c1_4, t1_4, o4_4, h4_4, l4_4, c4_4, t4_4, confirmed_4)
+if barstate.isconfirmed and OUTSIDE_RANGE
+    FVG_4.AdjustMargins(TF_4)
+
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------//
+// High Low 
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------//
+
+show_HL      = input.bool(defval = true , title = 'High / Low only outside range' , inline = 'HL', group = 'Horizontal Lines')
+Sess_D       = '0001-2400'
+lineColor_HL = input.color(defval = #fff9c4 , title = '' , inline = 'HL', group = 'Horizontal Lines')
+lineStyle_HL = input.string(title = 'Style', defval = line.style_solid, options=[line.style_dotted, line.style_dashed, line.style_solid], inline = 'HL', group = 'Horizontal Lines')
+iExtend      = input.bool(defval = true , title = 'Extend Lines', group = 'Horizontal Lines')
+iMXLineCnt   = input.int(defval = 100 , title = 'max Line Count', group = 'Horizontal Lines')
+iEBLineCnt   = input.int(defval = 0 , title = 'Extend Broken Line Count', group = 'Horizontal Lines')
+
+//-----
+var max_array_size = iMXLineCnt
+var sess_line_H_c_array_ = array.new_line()
+var sess_line_L_c_array_ = array.new_line()
+var sessionLineHArray_c = array.new_bool()
+var sessionLineLArray_c = array.new_bool()
+
+InSession(sessionTime) =>
+    not na(time(timeframe.period , sessionTime , Timezone))
+
+add_to_Line(pointer, pointer_c, aLine) =>
+    array.unshift(pointer, aLine)
+    array.unshift(pointer_c, false)
+    if array.size(pointer) > max_array_size
+        array.pop(pointer)
+        array.pop(pointer_c)
+       
+drawing_HorizonalLines(aSessionTime, aTimezone) =>
+    // Create variables
+    var sessionHighPrice = 0.0
+    var sessionLowPrice  = 0.0
+    var line sessionLineH = na
+    var line sessionLineL = na
+
+    // See if the session is currently active and just started
+    inSession    = InSession(aSessionTime) and timeframe.isintraday
+    sessionStart = inSession and not inSession[1]
+
+    // When a new session starts, set the session high and low to the data
+    // of the bar in the session.
+    if sessionStart
+        sessionHighPrice := high
+        sessionLowPrice  := low
+
+    // Else, during the session, track the highest high and lowest low
+    else if inSession
+        sessionHighPrice := math.max(sessionHighPrice, high)
+        sessionLowPrice  := math.min(sessionLowPrice, low)
+
+    // When a session begins, make a new box for that session
+    if sessionStart
+        sessionLineH := line.new(bar_index,na,na,na,color = color.rgb(0,0,255,100))
+        sessionLineL := line.new(bar_index,na,na,na,color = color.rgb(0,0,255,100))
+        add_to_Line(sess_line_H_c_array_, sessionLineHArray_c, sessionLineH)
+        add_to_Line(sess_line_L_c_array_, sessionLineLArray_c, sessionLineL)
+
+    // During the session, update that session's existing box 
+    if inSession
+        line.set_y1(sessionLineH, sessionHighPrice)
+        line.set_y2(sessionLineH, sessionHighPrice)
+        line.set_y1(sessionLineL, sessionLowPrice)
+        line.set_y2(sessionLineL, sessionLowPrice)
+
+        line.set_x2(sessionLineH, bar_index + 1)
+        line.set_x2(sessionLineL, bar_index + 1)
+
+        if iExtend
+            line.set_extend(sessionLineH , extend.right) 
+            line.set_extend(sessionLineL , extend.right)
+        else   
+            line.set_x2(sessionLineH , last_bar_index)
+            line.set_x2(sessionLineL , last_bar_index)
+
+// Drawing Vertical Lines 
+if OUTSIDE_RANGE and time <= start_test and DOM60 
+    if show_HL
+        drawing_HorizonalLines(Sess_D , Timezone)
+
+// Checking Cross the Vertical Lines 
+if array.size(sess_line_H_c_array_) > 1
+    for i = 1 to array.size(sess_line_H_c_array_)-1
+        if line.get_y2(array.get(sess_line_H_c_array_ , i)) <= high
+            line.set_color(array.get(sess_line_H_c_array_ , i) , color.rgb(0, 187, 212, 100))
+            if iEBLineCnt <= i
+                line.set_extend(array.get(sess_line_H_c_array_ , i) , extend.none)
+            array.set(sessionLineHArray_c , i , true)
+        else
+            if not array.get(sessionLineHArray_c , i)
+                line.set_color(array.get(sess_line_H_c_array_ , i) , lineColor_HL)
+                line.set_style(array.get(sess_line_H_c_array_ , i) , lineStyle_HL)
+
+if array.size(sess_line_L_c_array_) > 1
+    for i = 1 to array.size(sess_line_L_c_array_)-1
+        if line.get_y2(array.get(sess_line_L_c_array_ , i)) >= low
+            line.set_color(array.get(sess_line_L_c_array_ , i) , color.rgb(0, 187, 212, 100))
+            if iEBLineCnt <= i
+                line.set_extend(array.get(sess_line_L_c_array_ , i) , extend.none)
+            array.set(sessionLineLArray_c , i , true)
+        else
+            if not array.get(sessionLineLArray_c , i)
+                line.set_color(array.get(sess_line_L_c_array_ , i) , lineColor_HL)
+                line.set_style(array.get(sess_line_L_c_array_ , i) , lineStyle_HL)  
+// ]
+
+My Note: This indicator has very advanced settings and includes many other ICT concepts such as FVG's and MTF analysis which should definitely be set to my liking.

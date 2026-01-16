@@ -1,0 +1,4 @@
+Indicators/scripts for Mitigation Blocks (MB's) don't exist on TradingView. 
+Claude has to write a script for ICT Mitigation Blocks on its own.
+Here's a source on what Mitigation Blocks are:
+https://www.tradingview.com/chart/GBPCAD/3M3OxgVu-ICT-Breaker-Mitigation-Blocks-EXPLAINED/

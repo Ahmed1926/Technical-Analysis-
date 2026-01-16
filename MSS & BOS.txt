@@ -1,0 +1,216 @@
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © ICTProTools
+
+//@version=6
+indicator('ICT Breakers (BOS / MSS - Market Structure) [ICTProTools]', 'ICTProTools - Breakers', true, max_bars_back = 4999, max_lines_count=500, max_labels_count=500)
+
+// Utility Function
+// Converts string to corresponding line style
+Fline(val) =>
+    switch val
+        'Solid' => line.style_solid
+        'Dotted' => line.style_dotted
+        'Dashed' => line.style_dashed
+
+// User Inputs
+var STRU        = 'Structure'
+
+// Timeframe selection for the structure logic
+tfStructure     = input.timeframe('', 'Timeframe', group = STRU, tooltip = 'Select the timeframe used to calculate breakers.\nNote: You must be on a timeframe equal to or lower than the one selected to display the structure.')
+
+// Number of bars left/right to identify swing points (pivot highs/lows)
+rlBars          = input.int(2, 'Swing Bars  ', 1, inline = 'piv', group = STRU, tooltip = 'Number of bars to the left and right of a candle required for it to qualify as a swing point.')
+
+// Continuation (BOS) display settings
+showBos         = input.bool(true, 'Continuation (BOS)', group = STRU)
+var bosStyle    = Fline(input.string('Dotted', 'Style', ['Solid', 'Dashed', 'Dotted'], inline = 'bos', group = STRU))
+bosWidth        = input.int(2, '', 1, 5, inline = 'bos', group = STRU)
+bosBullCol      = input.color(color.teal, '', inline = 'bos', group = STRU)
+bosBearCol      = input.color(color.red, '', 'Define the style and width shared by both Bullish and Bearish Continuation (BOS) lines. You can assign a different color for each direction.', inline = 'bos', group = STRU)
+
+// Breaker (MSS) display settings
+showMss         = input.bool(true, 'Breaker (MSS)', inline = 'breaker', group = STRU)
+mssMode         = input.string('Body Only', '- Type', ['Body Only', 'Body / Wick'], 'Define how a level is considered broken for MSS Break: "Body Only" requires a candle close beyond the level, while "Body or Wick" allows wick breaches too.', 'breaker', group = STRU)
+var mssStyle    = Fline(input.string('Solid', 'Style', ['Solid', 'Dashed', 'Dotted'], inline = 'mss', group = STRU))
+mssWidth        = input.int(2, '', 1, 5, inline = 'mss', group = STRU)
+mssBullCol      = input.color(color.teal, '', inline = 'mss', group = STRU)
+mssBearCol      = input.color(color.red, '', 'Define the style and width shared by both Bullish and Bearish Breaker (MSS) lines. You can assign a different color for each direction.', inline = 'mss', group = STRU)
+
+// Alert Settings
+var ALERT       = 'Any alert() function call'
+bosBullAlert    = input.bool(false, '', inline = 'bos', group = ALERT)
+bosBullName     = input.string('Bull BOS', '', inline = 'bos', group = ALERT)
+bosBearAlert    = input.bool(false, '', inline = 'bos', group = ALERT)
+bosBearName     = input.string('Bear BOS', '', tooltip = 'Enable alerts here and set a custom name for Bullish Continuation (Bull BOS) or Bearish Continuation (Bear BOS).', inline = 'bos', group = ALERT)
+
+mssBullAlert    = input.bool(false, '', inline = 'mss', group = ALERT)
+mssBullName     = input.string('Bull MSS', '', inline = 'mss', group = ALERT)
+mssBearAlert    = input.bool(false, '', inline = 'mss', group = ALERT)
+mssBearName     = input.string('Bear MSS', '', tooltip = 'Enable alerts here and set a custom name for Bullish Breaker (Bull MSS) or Bearish Breaker (Bear MSS).', inline = 'mss', group = ALERT)
+
+// Core Logic Variables
+var lin = array.new_line()
+var bool bull = false
+
+// Custom pivot structure
+type piv
+    float pp
+    int pi
+
+// Track current and new pivots
+var piv pH = na
+var piv pL = na
+var piv nPh = na
+var piv nPl = na
+var float nPh1 = na
+var float nPl1 = na
+
+// Function: Get pivot points
+Fmtf() =>
+    phPs = ta.pivothigh(rlBars, rlBars)
+    plPs = ta.pivotlow(rlBars, rlBars)
+    int phBi = na
+    int plBi = na
+    if not na(phPs)
+        phBi := time[rlBars]
+    if not na(plPs)
+        plBi := time[rlBars]
+    [phPs, phBi, plPs, plBi]
+
+// Get HTF pivots and data
+[phPs, phBi, plPs, plBi] = request.security(syminfo.tickerid, tfStructure, Fmtf(), lookahead = barmerge.lookahead_on)
+
+if not na(phPs)
+    nPh := piv.new(phPs, phBi)
+    if na(pH)
+        pH := piv.new(phPs, phBi)
+
+if not na(plPs)
+    nPl := piv.new(plPs, plBi)
+    if na(pL)
+        pL := piv.new(plPs, plBi)
+
+bosBull = false
+bosBear = false
+mssBull = false
+mssBear = false
+
+var mssBullVar = false
+var mssBearVar = false
+
+// Fetch HTF close and time to compare with break levels
+[htfClose, htfTime] = request.security(syminfo.tickerid, tfStructure, [close[1], time[1]], lookahead = barmerge.lookahead_on)
+
+highCond = bull or mssMode == 'Body / Wick' ? high : htfClose
+timeHighCond = bull or mssMode == 'Body / Wick' ? time : htfTime
+
+if ((plPs > nPl1 and bull) or na(nPl1) or plPs < nPl1)
+    nPl1 := plPs
+
+// Check if bullish breaker or continuation is valid
+breakHighCond = not na(pH) and highCond > pH.pp
+
+// Filter for displaying structure only if current TF is lower than or equal to selected TF
+FtfLimit(val) =>
+    timeframe.in_seconds() <= timeframe.in_seconds(val)
+
+var tfL0 = FtfLimit(tfStructure)
+
+// Bullish logic
+if breakHighCond
+    if bull
+        bosBull := true
+        if not mssBullVar and lin.size() > 0
+            lin.shift().delete()
+        mssBullVar := false
+    else
+        mssBull := true
+        mssBullVar := true
+
+    linCon = bull ? showBos : showMss
+    linCol = bull ? bosBullCol : mssBullCol
+
+    // Display lines
+    newLin = line.new(pH.pi, pH.pp, timeHighCond, pH.pp, color= tfL0 and linCon ? linCol : na, xloc = xloc.bar_time, style = bull ? bosStyle : mssStyle, width = bull ? bosWidth : mssWidth)
+
+    // Repeated alerts
+    if bosBullAlert and bull
+        alert('Bull BOS')
+    else if mssBullAlert and not bull
+        alert('Bull Breaker')
+
+    bull := true
+    mssBearVar := false
+
+    pH := na
+    pL := na
+
+    if not na(nPl1) and not na(nPl)
+        pL := piv.new(nPl.pp, nPl.pi)
+
+    lin.unshift(newLin)
+
+lowCond = bull and mssMode == 'Body Only' ? htfClose : low
+timeLowCond = bull and mssMode == 'Body Only' ? htfTime : time
+
+if ((phPs < nPh1 and not bull) or na(nPh1) or phPs > nPh1)
+    nPh1 := phPs
+
+breakLowCond = not na(pL) and lowCond < pL.pp
+
+// Bearish logic
+if breakLowCond
+    if not bull
+        bosBear := true
+        if not mssBearVar and lin.size() > 0
+            lin.shift().delete()
+        mssBearVar := false
+    else
+        mssBear := true
+        mssBearVar := true
+
+    linCon = bull ? showMss : showBos
+    linCol = bull ? mssBearCol : bosBearCol
+
+    // Display lines
+    newLin = line.new(pL.pi, pL.pp, timeLowCond, pL.pp, color = tfL0 and linCon ? linCol : na, xloc = xloc.bar_time, style = bull ? mssStyle : bosStyle, width = bull ? mssWidth : bosWidth)
+
+    // Repeated alerts
+    if bosBearAlert and not bull
+        alert('Bear BOS')
+    else if mssBearAlert and bull
+        alert('Bear Breaker')
+
+    bull := false
+    mssBullVar := false
+
+    pH := na
+    pL := na
+
+    if not na(nPh1) and not na(nPh)
+        pH := piv.new(nPh.pp, nPh.pi)
+
+    lin.unshift(newLin)
+
+// Update current swing points based on newest values
+if not na(pH) and not na(nPh) and not na(nPh[1]) and lin.size() > 0 and not bull and nPh.pp != (nPh[1]).pp and nPh.pi <= line.get_x2(lin.first())
+    pH := piv.new(nPh.pp, nPh.pi)
+
+if not na(pL) and not na(nPl) and not na(nPl[1]) and lin.size() > 0 and bull and nPl.pp != (nPl[1]).pp and nPl.pi <= line.get_x2(lin.first())
+    pL := piv.new(nPl.pp, nPl.pi)
+
+// Reset broken structure pivots once price exceeds
+if not na(nPh) and high > nPh.pp
+    nPh := na
+
+if not na(nPl) and low < nPl.pp
+    nPl := na
+
+// Single alerts
+alertcondition(bosBull, 'BOS Bull', 'BOS Bull')
+alertcondition(bosBear, 'BOS Bear', 'BOS Bear')
+alertcondition(mssBull, 'MSS Bull', 'MSS Bull')
+alertcondition(mssBear, 'MSS Bear', 'MSS Bear')
+
+
+My Note: Make sure to change the colors to reverse because they're originally reversed in the indicator.

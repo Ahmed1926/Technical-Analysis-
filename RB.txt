@@ -1,0 +1,54 @@
+//@version=5
+// RB — Rejection Blocks (Price Structure)
+// Visualizza potenziali Rejection Blocks (bullish/bearish) usando sola struttura di prezzo.
+
+indicator("RB — Rejection Blocks (Price Structure)", overlay=true)
+
+// === INPUTS ===
+showBull     = input.bool(true,  "Show Bullish RB")
+showBear     = input.bool(true,  "Show Bearish RB")
+drawBoxes    = input.bool(true,  "Draw Boxes")
+drawLines    = input.bool(false, "Draw Lines")
+showLabels   = input.bool(true,  "Show Labels")
+
+boxColorBull = input.color(color.new(color.green, 15), "Bullish Box Color")
+boxColorBear = input.color(color.new(color.red,   15), "Bearish Box Color")
+lineColorBull= input.color(color.green,                "Bullish Line Color")
+lineColorBear= input.color(color.red,                  "Bearish Line Color")
+
+// === RB CONDITIONS (modello semplice e didattico) ===
+// Bullish RB: candle precedente rossa con lower low rispetto a quella prima e a quella dopo
+isBullishRB = close[1] < open[1] and low[1] < low[2] and low[1] < low
+// Bearish RB: candle precedente verde con higher high rispetto a quella prima e a quella dopo
+isBearishRB = close[1] > open[1] and high[1] > high[2] and high[1] > high
+
+// === STORAGE ===
+var box[]  bullishRBs  = array.new_box()
+var box[]  bearishRBs  = array.new_box()
+var line[] bullishLines= array.new_line()
+var line[] bearishLines= array.new_line()
+
+// === DRAW BULLISH BLOCKS ===
+if showBull and isBullishRB
+    if drawBoxes
+        b = box.new(left=bar_index[1], top=high[1], right=bar_index, bottom=low[1], border_color=color.green, bgcolor=boxColorBull)
+        array.push(bullishRBs, b)
+    if drawLines
+        l = line.new(x1=bar_index[1], y1=low[1], x2=bar_index, y2=low[1], color=lineColorBull)
+        array.push(bullishLines, l)
+    if showLabels
+        label.new(bar_index[1], low[1], "Bull RB", style=label.style_label_up, color=color.green, textcolor=color.white)
+
+// === DRAW BEARISH BLOCKS ===
+if showBear and isBearishRB
+    if drawBoxes
+        b = box.new(left=bar_index[1], top=high[1], right=bar_index, bottom=low[1], border_color=color.red, bgcolor=boxColorBear)
+        array.push(bearishRBs, b)
+    if drawLines
+        l = line.new(x1=bar_index[1], y1=high[1], x2=bar_index, y2=high[1], color=lineColorBear)
+        array.push(bearishLines, l)
+    if showLabels
+        label.new(bar_index[1], high[1], "Bear RB", style=label.style_label_down, color=color.red, textcolor=color.white)
+
+// Hidden plot per evitare warning "no plot"
+plot(close, display=display.none)

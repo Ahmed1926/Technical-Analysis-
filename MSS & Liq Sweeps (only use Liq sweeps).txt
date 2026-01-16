@@ -1,0 +1,233 @@
+//@version=6
+indicator('Sweep + MSS', overlay = true, max_boxes_count = 500, max_lines_count = 500)
+
+// Input settings
+length = input.int(14, title = 'Pivot Lookback Length')
+intraPrecision = input.bool(false, title = 'Intrabar Precision Check')
+intrabarTf = input.timeframe('1', title = 'Intrabar Timeframe')
+filterType = input.string('ATR', title = 'Filter Type', options = ['Percentage', 'ATR', 'None'], group = 'Filter Settings')
+atrLength = input.int(30, title = 'ATR Length + Mult.', group = 'Filter Settings', inline = 'atr')
+atrMult = input.float(1.0, title = '', step = 0.1, group = 'Filter Settings', inline = 'atr')
+pctCond = input.float(0.3, title = 'Percentage + Mult.', step = 0.1, group = 'Filter Settings', inline = 'pct')
+pctMult = input.float(1.0, title = '', step = 0.1, group = 'Filter Settings', inline = 'pct')
+
+// New Sweep Filter Inputs
+enableTrendFilter = input.bool(false, title = 'Enable Trend Sweep Filter', group = 'Sweep Filters')
+sweepType = input.string('Wick', title = 'Sweep Type', options = ['Wick', 'Cross'], group = 'Sweep Filters')
+onlyLatestLevel = input.bool(true, title = 'Only Sweep Latest High/Low', group = 'Sweep Filters')
+
+// Styling Inputs
+showSweep = input.bool(true, title = 'Show Sweeps')
+sweepColor = input.color(color.yellow, title = 'Sweep Signal Color')
+markSweptLevel = input.bool(true, title = 'Mark Swept Levels')
+
+// Alert Inputs
+enableAlerts = input.bool(true, title = 'Enable Alerts')
+
+// Requesting HTF data
+[o, h, l, c] = request.security(syminfo.tickerid, intrabarTf, [open, high, low, close])
+
+// Pivot Highs/Lows
+ph = ta.pivothigh(length, length)
+pl = ta.pivotlow(length, length)
+
+var float swingHigh = na
+var float swingLow = na
+var bool sweptHigh = false
+var bool sweptLow = false
+
+// ATR Calculation
+atr = ta.atr(atrLength)
+
+// Variables for trend filtering
+var float prevSwingHigh = na
+var float prevSwingLow = na
+var float lastLowerHigh = na
+var float lastHigherLow = na
+var bool lastHighWasLowerHigh = false
+var bool lastLowWasHigherLow = false
+var bool readyForBearishTrendSweep = false
+var bool readyForBullishTrendSweep = false
+
+// Variables for latest level tracking
+var float latestSwingHigh = na
+var float latestSwingLow = na
+var int latestSwingHighBar = na
+var int latestSwingLowBar = na
+
+// New variables for MSS
+var float lastBullishSweep = na
+var float lastBearishSweep = na
+var float lastLowAfterBullishSweep = na
+var float lastHighAfterBearishSweep = na
+var bool waitingForBullishMSS = false
+var bool waitingForBearishMSS = false
+var int lastBearishSweepIndex = na
+var int lastBullishSweepIndex = na
+
+// MSS Styling Inputs
+showMSS = input.bool(true, title = 'Show MSS Signals')
+minBarsAfterSweep = input.int(10, title = 'Minimum Bars After Sweep for MSS', minval = 1)
+mssLineStyle = input.string('Dashed', title = 'MSS Line Style', options = ['Solid', 'Dashed', 'Dotted'])
+
+// New inputs for label customization
+label_offset = input.float(0.5, title = 'Label Offset', step = 0.1)
+label_size = input.string('Normal', title = 'Label Size', options = ['Tiny', 'Small', 'Normal', 'Large'])
+
+// Function to convert string size to label.style_size
+f_getLabelSize(size) =>
+    switch size
+        'Tiny' => size.tiny
+        'Small' => size.small
+        'Normal' => size.normal
+        'Large' => size.large
+
+// Function to check if bearish trend sweep conditions are met
+f_isBearishTrendSweep(currentHigh) =>
+    if not enableTrendFilter
+        true
+    else
+        // Check if current high is the lower high that was immediately followed by a lower low
+        currentHigh == lastLowerHigh and readyForBearishTrendSweep
+
+// Function to check if bullish trend sweep conditions are met  
+f_isBullishTrendSweep(currentLow) =>
+    if not enableTrendFilter
+        true
+    else
+        // Check if current low is the higher low that was immediately followed by a higher high
+        currentLow == lastHigherLow and readyForBullishTrendSweep
+
+// Function to check if we're sweeping the latest high
+f_isLatestHigh(levelToSweep) =>
+    if not onlyLatestLevel
+        true
+    else
+        levelToSweep == latestSwingHigh
+
+// Function to check if we're sweeping the latest low  
+f_isLatestLow(levelToSweep) =>
+    if not onlyLatestLevel
+        true
+    else
+        levelToSweep == latestSwingLow
+
+// Enhanced Pivot and Trend Logic
+if bool(ph)
+    currentHigh = high[length]
+    
+    // Update trend tracking
+    if not na(swingHigh)
+        prevSwingHigh := swingHigh
+        
+        // Check if this is a lower high
+        if currentHigh < swingHigh
+            lastLowerHigh := currentHigh
+            lastHighWasLowerHigh := true
+            readyForBearishTrendSweep := false // Reset until confirmed by lower low
+        else
+            lastHighWasLowerHigh := false
+            
+        // Check if this is a higher high (after a higher low)
+        if currentHigh > swingHigh and lastLowWasHigherLow
+            readyForBullishTrendSweep := true // Higher low was immediately followed by higher high
+    
+    swingHigh := currentHigh
+    sweptHigh := false
+    
+    // Update latest level tracking
+    latestSwingHigh := currentHigh
+    latestSwingHighBar := bar_index[length]
+
+if bool(pl)
+    currentLow = low[length]
+    
+    // Update trend tracking  
+    if not na(swingLow)
+        prevSwingLow := swingLow
+        
+        // Check if this is a lower low (after a lower high)
+        if currentLow < swingLow and lastHighWasLowerHigh
+            readyForBearishTrendSweep := true // Lower high was immediately followed by lower low
+            
+        // Check if this is a higher low
+        if currentLow > swingLow
+            lastHigherLow := currentLow
+            lastLowWasHigherLow := true
+            readyForBullishTrendSweep := false // Reset until confirmed by higher high
+        else
+            lastLowWasHigherLow := false
+    
+    swingLow := currentLow
+    sweptLow := false
+    
+    // Update latest level tracking
+    latestSwingLow := currentLow
+    latestSwingLowBar := bar_index[length]
+
+// Enhanced Sweep Detection Logic
+// Bearish Sweep (High gets swept)
+bearishSweepCondition = sweepType == 'Wick' ? (high > swingHigh and close < swingHigh) : (open[1] > swingHigh and open > swingHigh and close < swingHigh)
+if not sweptHigh and not na(swingHigh) and bearishSweepCondition and f_isBearishTrendSweep(swingHigh) and f_isLatestHigh(swingHigh)
+    if showSweep
+        label.new(bar_index, high, 'Sweep', color = sweepColor, style = label.style_label_down, textcolor = color.black, size = f_getLabelSize(label_size))
+    if markSweptLevel
+        line.new(bar_index[length], swingHigh, bar_index, swingHigh, color = color.red, style = line.style_dotted)
+    if enableAlerts
+        alert('Bearish Sweep detected at ' + str.tostring(swingHigh) + ' for ' + syminfo.ticker, alert.freq_once_per_bar_close)
+    sweptHigh := true
+    lastBearishSweep := swingHigh
+    lastBearishSweepIndex := bar_index
+
+// Bullish Sweep (Low gets swept)  
+bullishSweepCondition = sweepType == 'Wick' ? (low < swingLow and close > swingLow) : (open[1] < swingLow and open < swingLow and close > swingLow)
+if not sweptLow and not na(swingLow) and bullishSweepCondition and f_isBullishTrendSweep(swingLow) and f_isLatestLow(swingLow)
+    if showSweep
+        label.new(bar_index, low, 'Sweep', color = sweepColor, style = label.style_label_up, textcolor = color.black, size = f_getLabelSize(label_size))
+    if markSweptLevel
+        line.new(bar_index[length], swingLow, bar_index, swingLow, color = color.green, style = line.style_dotted)
+    if enableAlerts
+        alert('Bullish Sweep detected at ' + str.tostring(swingLow) + ' for ' + syminfo.ticker, alert.freq_once_per_bar_close)
+    sweptLow := true
+    lastBullishSweep := swingLow
+    lastBullishSweepIndex := bar_index
+
+// MSS Logic
+cooldownPeriod = input.int(20, title = 'MSS Cooldown Period', minval = 1)
+var int lastBullishMSSIndex = na
+var int lastBearishMSSIndex = na
+
+if not na(lastBullishSweep) and low < lastBullishSweep
+    lastLowAfterBullishSweep := low
+    waitingForBullishMSS := true
+    waitingForBullishMSS
+
+if not na(lastBearishSweep) and high > lastBearishSweep
+    lastHighAfterBearishSweep := high
+    waitingForBearishMSS := true
+    waitingForBearishMSS
+
+if waitingForBullishMSS and not na(lastBearishSweep) and close > lastBearishSweep and bar_index - lastBearishSweepIndex >= minBarsAfterSweep and (na(lastBullishMSSIndex) or bar_index - lastBullishMSSIndex >= cooldownPeriod)
+    if showMSS
+        lineStyle = mssLineStyle == 'Solid' ? line.style_solid : mssLineStyle == 'Dashed' ? line.style_dashed : line.style_dotted
+        mssLine = line.new(lastBearishSweepIndex, lastBearishSweep, bar_index, lastBearishSweep, color = color.green, style = lineStyle)
+        label.new(bar_index, low, '🐂-MSS', color = color.new(color.green, 90), style = label.style_label_up, textcolor = color.black, size = f_getLabelSize(label_size))
+    if enableAlerts
+        alert('Bullish MSS detected at ' + str.tostring(lastBearishSweep) + ' for ' + syminfo.ticker, alert.freq_once_per_bar_close)
+    waitingForBullishMSS := false
+    lastBullishMSSIndex := bar_index
+    lastBullishMSSIndex
+
+if waitingForBearishMSS and not na(lastBullishSweep) and close < lastBullishSweep and bar_index - lastBullishSweepIndex >= minBarsAfterSweep and (na(lastBearishMSSIndex) or bar_index - lastBearishMSSIndex >= cooldownPeriod)
+    if showMSS
+        lineStyle = mssLineStyle == 'Solid' ? line.style_solid : mssLineStyle == 'Dashed' ? line.style_dashed : line.style_dotted
+        mssLine = line.new(lastBullishSweepIndex, lastBullishSweep, bar_index, lastBullishSweep, color = color.red, style = lineStyle)
+        label.new(bar_index, high, '🐻-MSS', color = color.new(color.red, 90), style = label.style_label_down, textcolor = color.black, size = f_getLabelSize(label_size))
+    if enableAlerts
+        alert('Bearish MSS detected at ' + str.tostring(lastBullishSweep) + ' for ' + syminfo.ticker, alert.freq_once_per_bar_close)
+    waitingForBearishMSS := false
+    lastBearishMSSIndex := bar_index
+    lastBearishMSSIndex
+
+
+My note: Only use the Liqudity Grabs from this script and remove the MSS part.

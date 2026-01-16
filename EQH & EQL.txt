@@ -1,0 +1,38 @@
+// This work is licensed under a Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0) https://creativecommons.org/licenses/by-nc-sa/4.0/
+// © ProValueTrader
+//@version=5
+indicator("Equal Highs and Equal Lows", shorttitle="Equal Highs/Lows", overlay=true, max_lines_count=500)
+//////////////////////////////////////////////////////////////////////////////// Equal Highs/Lows
+precision = input.int(2, step= 1, minval= 1, tooltip="A low value returns more exact Equal Highs/Lows. The value 1 returns the most accurate Equal Highs/Lows")
+PlotLines = input.bool(true, title="Plot Lines",inline="Line")
+LineCol = input(color.new(color.white,0),title="Line Color",inline="Line")
+LineWidth = input.int(3, step= 1, minval= 0,title="Line Width",inline="Line")
+PlotShapes = input.bool(true, title="Plot Shapes",inline="Shape")
+ShapeCol_Highs = input(color.new(color.lime,0),title="Highs Color",inline="Shape")
+ShapeCol_Lows = input(color.new(color.red,0),title="Lows Color",inline="Shape")
+
+
+// max/min
+max = math.max(high,high[1])
+min = math.min(low,low[1])
+// Normalize
+top = (math.abs(high - high[1])/(max-min))*100
+bottom = (math.abs(low - low[1])/(max-min))*100
+//Condition
+top_v = ta.crossunder(top,precision)
+bottom_v = ta.crossunder(bottom,precision)
+//Lines
+var line [] Top = array.new_line()
+var line [] Bot = array.new_line()
+if top_v and PlotLines
+    t = line.new(bar_index[1],high[1],bar_index,high, color=LineCol, style=line.style_solid, width=LineWidth)
+    array.push(Top,t)
+if bottom_v and PlotLines
+    b = line.new(bar_index[1],low[1],bar_index,low, color=LineCol, style=line.style_solid, width=LineWidth)
+    array.push(Bot,b)
+
+//Plot
+plotshape(PlotShapes?top_v:na, color=ShapeCol_Highs, offset=0, style=shape.triangledown, size=size.tiny, location=location.abovebar, title="Equal Highs")
+plotshape(PlotShapes?bottom_v:na, color=ShapeCol_Lows, offset=0, style=shape.triangleup, size=size.tiny, location=location.belowbar, title="Equal Lows")
+
+licence = input.string("Licence", group="This work is licensed under a Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0) https://creativecommons.org/licenses/by-nc-sa/4.0/",tooltip="This work is licensed under a Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0) https://creativecommons.org/licenses/by-nc-sa/4.0/")

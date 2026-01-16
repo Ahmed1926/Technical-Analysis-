@@ -1,0 +1,43 @@
+//@version=5
+indicator("BSL & SSL - Liquidity Zones", overlay=true)
+
+// الإعدادات
+length = input.int(20, title="عدد الشموع لتحليل القمم والقيعان")
+
+// إيجاد القمة والقاع
+highestHigh = ta.highest(high, length)
+lowestLow = ta.lowest(low, length)
+
+// تحديد BSL و SSL (فقط عندما تكون شمعة جديدة هي القمة/القاع)
+bslBreak = (high == highestHigh)
+sslBreak = (low == lowestLow)
+
+var float bslLevel = na
+var float sslLevel = na
+
+// تحديث مستويات BSL و SSL فقط عند ظهور قمة/قاع جديد
+if bslBreak
+    bslLevel := high
+
+if sslBreak
+    sslLevel := low
+
+// رسم الخطوط الثابتة
+plot(bslLevel, title="BSL", color=color.green, linewidth=2, style=plot.style_stepline)
+plot(sslLevel, title="SSL", color=color.red, linewidth=2, style=plot.style_stepline)
+
+// نص توضيحي على الخط
+var label bslLabel = na
+var label sslLabel = na
+
+if bslBreak
+    label.delete(bslLabel)
+    bslLabel := label.new(x=bar_index, y=bslLevel, text="BSL", style=label.style_label_down, color=color.green, textcolor=color.white)
+
+if sslBreak
+    label.delete(sslLabel)
+    sslLabel := label.new(x=bar_index, y=sslLevel, text="SSL", style=label.style_label_up, color=color.red, textcolor=color.white)
+
+My Note:
+BSL = Buy-Side Liquidity
+SSL = Sell-Side Liquidity 
