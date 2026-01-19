@@ -16,7 +16,7 @@ showDOL = input.bool(true, 'Show Draw on Liquidity', group=GROUP_GLOBAL)
 showSessions = input.bool(true, 'Show Trading Sessions', group=GROUP_GLOBAL)
 showPD = input.bool(false, 'Show Premium/Discount Zones', group=GROUP_GLOBAL)
 showRB = input.bool(true, 'Show Rejection Blocks', group=GROUP_GLOBAL)
-showIPDA = input.bool(false, 'Show IPDA Deviations', group=GROUP_GLOBAL)
+showIPDA = input.bool(true, 'Show IPDA Deviations', group=GROUP_GLOBAL)
 showSND = input.bool(false, 'Show S&D Profile', group=GROUP_GLOBAL)
 
 // ===================== HIGHER TIMEFRAME VISIBILITY CONTROL =====================

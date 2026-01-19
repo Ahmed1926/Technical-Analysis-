@@ -93,7 +93,7 @@ shouldShowOnCurrentTF(string conceptTF) =>
 var GROUP_OB = 'Order Blocks'
 obTimeframe = input.timeframe('240', 'Timeframe for Analysis (4H recommended)', group=GROUP_OB)
 obRange = input.int(30, 'Candle Range', minval=5, maxval=100, step=1, group=GROUP_OB)
-useMitigatedBlocks = input.bool(false, 'Show Mitigated Blocks', group=GROUP_OB)
+useMitigatedBlocks = input.bool(true, 'Show Mitigated Blocks', group=GROUP_OB)
 bearishOBColour = input.color(color.new(color.red, 70), title='Bearish OB', group=GROUP_OB)
 bullishOBColour = input.color(color.new(color.green, 70), title='Bullish OB', group=GROUP_OB)
 mitigatedOBColour = input.color(color.new(#808080, 85), title='Mitigated OB', group=GROUP_OB)
