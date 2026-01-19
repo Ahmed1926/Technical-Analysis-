@@ -194,7 +194,7 @@ if showLiqSweeps and showSweepOnCurrentTF and not sweptLow and not na(swingLow_s
 // ===================== WEEKLY & DAILY BIAS =====================
 var GROUP_BIAS = 'Weekly & Daily Bias'
 d_bias = input.bool(true, 'Daily Bias', group=GROUP_BIAS)
-w_bias = input.bool(false, 'Weekly Bias', group=GROUP_BIAS)
+w_bias = input.bool(true, 'Weekly Bias', group=GROUP_BIAS)
 bullBiasColor = input.color(color.new(color.green, 0), 'Bull Bias', group=GROUP_BIAS)
 bearBiasColor = input.color(color.new(color.red, 0), 'Bear Bias', group=GROUP_BIAS)
 
