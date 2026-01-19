@@ -91,7 +91,7 @@ shouldShowOnCurrentTF(string conceptTF) =>
 
 // ===================== ORDER BLOCKS =====================
 var GROUP_OB = 'Order Blocks'
-obTimeframe = input.timeframe('240', 'Timeframe for Analysis (4H recommended)', group=GROUP_OB)
+obTimeframe = input.timeframe('', 'Timeframe for Analysis (Chart)', group=GROUP_OB)
 obRange = input.int(30, 'Candle Range', minval=5, maxval=100, step=1, group=GROUP_OB)
 useMitigatedBlocks = input.bool(false, 'Show Mitigated Blocks', group=GROUP_OB)
 bearishOBColour = input.color(color.new(color.red, 70), title='Bearish OB', group=GROUP_OB)
@@ -221,7 +221,7 @@ lastLow := low < lastLow ? low : lastLow
 
 // ===================== BREAKER BLOCKS =====================
 var GROUP_BB = 'Breaker Blocks'
-bbTimeframe = input.timeframe('240', 'Timeframe for Analysis (4H recommended)', group=GROUP_BB)
+bbTimeframe = input.timeframe('', 'Timeframe for Analysis (Chart)', group=GROUP_BB)
 bullishBBColour = input.color(color.new(#2196F3, 70), title='Bullish BB', group=GROUP_BB)
 bearishBBColour = input.color(color.new(#FF9800, 70), title='Bearish BB', group=GROUP_BB)
 
@@ -294,7 +294,7 @@ if showBB and showBBOnCurrentTF and array.size(breakerLines) > 0
 
 // ===================== PROPULSION BLOCKS =====================
 var GROUP_PB = 'Propulsion Blocks'
-pbTimeframe = input.timeframe('240', 'Timeframe for Analysis (4H recommended)', group=GROUP_PB)
+pbTimeframe = input.timeframe('', 'Timeframe for Analysis (Chart)', group=GROUP_PB)
 pbMultiplier = input.float(2.0, 'Propulsion Multiplier', minval=1.0, step=0.5, group=GROUP_PB, tooltip='Price must move this many times the OB size to become a PB')
 bullishPBColour = input.color(color.new(#089981, 60), title='Bullish PB', group=GROUP_PB)
 bearishPBColour = input.color(color.new(#F23645, 60), title='Bearish PB', group=GROUP_PB)
@@ -381,7 +381,7 @@ if showPB and showPBOnCurrentTF and array.size(propulsionLines) > 0
 
 // ===================== FVG (Fair Value Gaps) =====================
 var GROUP_FVG = 'Fair Value Gaps'
-fvgTimeframe = input.timeframe('60', 'Timeframe for Analysis (1H recommended)', group=GROUP_FVG)
+fvgTimeframe = input.timeframe('', 'Timeframe for Analysis (Chart)', group=GROUP_FVG)
 fvgValidityPeriod = input.int(500, 'FVG Validity Period (Bars)', group=GROUP_FVG, maxval=4998, minval=10)
 fvgColor = input.color(color.new(#00BFFF, 80), 'FVG Color (Light Blue)', group=GROUP_FVG)
 
@@ -418,7 +418,7 @@ if fvgBoxes.size() > 0
 
 // ===================== MSS & BOS =====================
 var GROUP_MSS = 'Market Structure (MSS/BOS)'
-tfStructure = input.timeframe('240', 'Timeframe for Analysis (4H recommended)', group=GROUP_MSS)
+tfStructure = input.timeframe('', 'Timeframe for Analysis (Chart)', group=GROUP_MSS)
 rlBars = input.int(2, 'Swing Bars', 1, group=GROUP_MSS)
 showBos = input.bool(true, 'Show BOS', group=GROUP_MSS)
 showMss = input.bool(true, 'Show MSS', group=GROUP_MSS)
@@ -531,7 +531,7 @@ if showMSS_BOS and showMSSOnCurrentTF and breakLowCond
 
 // ===================== DISPLACEMENT =====================
 var GROUP_DISP = 'Displacement'
-dispTimeframe = input.timeframe('60', 'Timeframe for Analysis (1H recommended)', group=GROUP_DISP)
+dispTimeframe = input.timeframe('', 'Timeframe for Analysis (Chart)', group=GROUP_DISP)
 require_fvg_disp = input.bool(false, 'Require FVG', group=GROUP_DISP)
 disp_type = input.string('Open to Close', 'Displacement Type', options=['Open to Close', 'High to Low'], group=GROUP_DISP)
 std_len = input.int(100, minval=1, title='Displacement Length', group=GROUP_DISP)
@@ -551,7 +551,7 @@ barcolor(showDisplacement and showDispOnCurrentTF and displacement ? disp_color 
 
 // ===================== MITIGATION BLOCKS =====================
 var GROUP_MB = 'Mitigation Blocks'
-mbTimeframe = input.timeframe('60', 'Timeframe for Analysis (1H recommended)', group=GROUP_MB)
+mbTimeframe = input.timeframe('', 'Timeframe for Analysis (Chart)', group=GROUP_MB)
 mbShowBull = input.bool(true, 'Show Bullish MB', group=GROUP_MB)
 mbShowBear = input.bool(true, 'Show Bearish MB', group=GROUP_MB)
 mbBullColor = input.color(color.new(color.green, 85), 'Bullish MB', group=GROUP_MB)
