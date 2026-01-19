@@ -314,13 +314,13 @@ var array<bool> highLineHit = array.new<bool>(0)
 var array<bool> lowLineHit = array.new<bool>(0)
 
 if showDOL and showDOLOnCurrentTF and isValidHigh_dol
-    newHighLine = line.new(x1=bar_index - pivotLength_dol, y1=pivotHigh_dol, x2=bar_index, y2=pivotHigh_dol, color=highLiqColor, width=lineWidth_dol, extend=extend.right)
+    newHighLine = line.new(bar_index - pivotLength_dol, pivotHigh_dol, bar_index, pivotHigh_dol, color=highLiqColor, width=lineWidth_dol, extend=extend.right)
     array.push(highLiquidityLines, newHighLine)
     array.push(highLineHit, false)
     label.new(bar_index, pivotHigh_dol, 'DOL', style=label.style_label_down, color=color.new(color.white, 100), textcolor=highLiqColor, size=size.tiny)
 
 if showDOL and showDOLOnCurrentTF and isValidLow_dol
-    newLowLine = line.new(x1=bar_index - pivotLength_dol, y1=pivotLow_dol, x2=bar_index, y2=pivotLow_dol, color=lowLiqColor, width=lineWidth_dol, extend=extend.right)
+    newLowLine = line.new(bar_index - pivotLength_dol, pivotLow_dol, bar_index, pivotLow_dol, color=lowLiqColor, width=lineWidth_dol, extend=extend.right)
     array.push(lowLiquidityLines, newLowLine)
     array.push(lowLineHit, false)
     label.new(bar_index, pivotLow_dol, 'DOL', style=label.style_label_up, color=color.new(color.white, 100), textcolor=lowLiqColor, size=size.tiny)

@@ -137,7 +137,7 @@ if showOB and showOBOnCurrentTF and ta.crossunder(close, structureLow)
     if (bar_index - lastUpIndex) < 1000
         array.push(shortLineStart, bar_index)
         array.push(shortLineState, 0)
-        newLine = line.new(x1=lastUpIndex, y1=lastHigh, x2=bar_index + 50, y2=lastHigh, extend=extend.right, color=color.black, width=2, style=line.style_solid)
+        newLine = line.new(lastUpIndex, lastHigh, bar_index + 50, lastHigh, extend=extend.right, color=color.black, width=2, style=line.style_solid)
         label.new(x=bar_index + 10, y=lastHigh, text='OB-', color=color.new(color.white, 100), textcolor=color.red, size=size.small, style=label.style_label_center)
         array.push(shortLines, newLine)
         lastShortIndex := lastUpIndex
@@ -156,7 +156,7 @@ if showOB and showOBOnCurrentTF and array.size(shortLines) > 0
             lineX1 = line.get_x1(sline)
             lineX2 = line.get_x2(sline)
             line.delete(sline)
-            newMitigatedLine = line.new(x1=lineX1, y1=lineY, x2=lineX2, y2=lineY, extend=extend.right, color=mitigatedOBColour, width=2, style=line.style_solid)
+            newMitigatedLine = line.new(lineX1, lineY, lineX2, lineY, extend=extend.right, color=mitigatedOBColour, width=2, style=line.style_solid)
             label.new(x=bar_index + 10, y=lineY, text='OB-', color=color.new(color.white, 100), textcolor=mitigatedOBColour, size=size.small, style=label.style_label_center)
             array.set(shortLines, i, newMitigatedLine)
             array.set(shortLineState, i, 1)
@@ -172,7 +172,7 @@ if showOB and showOBOnCurrentTF and array.size(shortLines) > 0
             if (bar_index - lastDownIndex) < 1000 and bar_index > lastLongIndex
                 array.push(longLineStart, bar_index + 1)
                 array.push(longLineState, 0)
-                newLine = line.new(x1=lastDownIndex, y1=lastLow, x2=bar_index + 50, y2=lastLow, extend=extend.right, color=color.black, width=2, style=line.style_solid)
+                newLine = line.new(lastDownIndex, lastLow, bar_index + 50, lastLow, extend=extend.right, color=color.black, width=2, style=line.style_solid)
                 label.new(x=bar_index + 10, y=lastLow, text='OB+', color=color.new(color.white, 100), textcolor=color.green, size=size.small, style=label.style_label_center)
                 array.push(longLines, newLine)
                 lastLongIndex := bar_index
@@ -192,7 +192,7 @@ if showOB and showOBOnCurrentTF and array.size(longLines) > 0
                 lineX1 = line.get_x1(lline)
                 lineX2 = line.get_x2(lline)
                 line.delete(lline)
-                newMitigatedLine = line.new(x1=lineX1, y1=lineY, x2=lineX2, y2=lineY, extend=extend.right, color=mitigatedOBColour, width=2, style=line.style_solid)
+                newMitigatedLine = line.new(lineX1, lineY, lineX2, lineY, extend=extend.right, color=mitigatedOBColour, width=2, style=line.style_solid)
                 label.new(x=bar_index + 10, y=lineY, text='OB+', color=color.new(color.white, 100), textcolor=mitigatedOBColour, size=size.small, style=label.style_label_center)
                 array.set(longLines, i, newMitigatedLine)
             array.set(longLineState, i, 1)
@@ -246,7 +246,7 @@ if showBB and showBBOnCurrentTF and array.size(shortLines) > 0
         // If price closes above former bearish OB, it becomes a bullish breaker
         if close > lineY and bar_index > lineLeft + 2
             // Create breaker line
-            newBB = line.new(x1=lineLeft, y1=lineY, x2=bar_index + 50, y2=lineY, extend=extend.right, color=color.black, width=2, style=line.style_solid)
+            newBB = line.new(lineLeft, lineY, bar_index + 50, lineY, extend=extend.right, color=color.black, width=2, style=line.style_solid)
             label.new(x=bar_index + 10, y=lineY, text='BB+', color=color.new(color.white, 100), textcolor=color.green, size=size.small, style=label.style_label_center)
             array.push(breakerLines, newBB)
             array.push(breakerTypes, 1)
@@ -263,7 +263,7 @@ if showBB and showBBOnCurrentTF and array.size(longLines) > 0
         // If price closes below former bullish OB, it becomes a bearish breaker
         if close < lineY and bar_index > lineLeft + 2
             // Create breaker line
-            newBB = line.new(x1=lineLeft, y1=lineY, x2=bar_index + 50, y2=lineY, extend=extend.right, color=color.black, width=2, style=line.style_solid)
+            newBB = line.new(lineLeft, lineY, bar_index + 50, lineY, extend=extend.right, color=color.black, width=2, style=line.style_solid)
             label.new(x=bar_index + 10, y=lineY, text='BB-', color=color.new(color.white, 100), textcolor=color.red, size=size.small, style=label.style_label_center)
             array.push(breakerLines, newBB)
             array.push(breakerTypes, -1)
@@ -322,7 +322,7 @@ if showPB and showPBOnCurrentTF and array.size(longLines) > 0
             propulsionThreshold = lineY * (1 + (pbMultiplier / 100))  // 2% default
             if high > propulsionThreshold
                 // This OB became a Propulsion Block
-                newPB = line.new(x1=lineLeft, y1=lineY, x2=bar_index + 50, y2=lineY, extend=extend.right, color=color.black, width=2, style=line.style_solid)
+                newPB = line.new(lineLeft, lineY, bar_index + 50, lineY, extend=extend.right, color=color.black, width=2, style=line.style_solid)
                 label.new(x=bar_index + 10, y=lineY, text='PB+', color=color.new(color.white, 100), textcolor=color.green, size=size.small, style=label.style_label_center)
                 array.push(propulsionLines, newPB)
                 array.push(propulsionTypes, 1)
@@ -347,7 +347,7 @@ if showPB and showPBOnCurrentTF and array.size(shortLines) > 0
             propulsionThreshold = lineY * (1 - (pbMultiplier / 100))
             if low < propulsionThreshold
                 // This OB became a Propulsion Block
-                newPB = line.new(x1=lineLeft, y1=lineY, x2=bar_index + 50, y2=lineY, extend=extend.right, color=color.black, width=2, style=line.style_solid)
+                newPB = line.new(lineLeft, lineY, bar_index + 50, lineY, extend=extend.right, color=color.black, width=2, style=line.style_solid)
                 label.new(x=bar_index + 10, y=lineY, text='PB-', color=color.new(color.white, 100), textcolor=color.red, size=size.small, style=label.style_label_center)
                 array.push(propulsionLines, newPB)
                 array.push(propulsionTypes, -1)
