@@ -367,8 +367,8 @@ bgcolor(showSessions and show_ny and not na(ny_session) and canShow1H() ? ny_col
 // ===================== PREMIUM/DISCOUNT ZONES =====================
 var GROUP_PD = 'Premium/Discount Zones'
 pdTimeframe = input.timeframe('D', 'Timeframe for Analysis (Daily recommended)', group=GROUP_PD)
-pd_high = input.float(0.0, title='Range High (0 = disabled)', group=GROUP_PD)
-pd_low = input.float(0.0, title='Range Low (0 = disabled)', group=GROUP_PD)
+pd_high = input.float(100.0, title='Range High (0 = disabled)', group=GROUP_PD)
+pd_low = input.float(-100.0, title='Range Low (0 = disabled)', group=GROUP_PD)
 show_premium = input.bool(true, 'Show Premium Zone', group=GROUP_PD)
 show_discount = input.bool(true, 'Show Discount Zone', group=GROUP_PD)
 show_equilibrium = input.bool(true, 'Show Equilibrium', group=GROUP_PD)
