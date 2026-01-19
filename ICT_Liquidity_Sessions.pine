@@ -14,7 +14,7 @@ showBias = input.bool(true, 'Show Weekly/Daily Bias', group=GROUP_GLOBAL)
 showPO3 = input.bool(true, 'Show Power of 3', group=GROUP_GLOBAL)
 showDOL = input.bool(true, 'Show Draw on Liquidity', group=GROUP_GLOBAL)
 showSessions = input.bool(true, 'Show Trading Sessions', group=GROUP_GLOBAL)
-showPD = input.bool(false, 'Show Premium/Discount Zones', group=GROUP_GLOBAL)
+showPD = input.bool(true, 'Show Premium/Discount Zones', group=GROUP_GLOBAL)
 showRB = input.bool(true, 'Show Rejection Blocks', group=GROUP_GLOBAL)
 showIPDA = input.bool(true, 'Show IPDA Deviations', group=GROUP_GLOBAL)
 showSND = input.bool(false, 'Show S&D Profile', group=GROUP_GLOBAL)
@@ -379,7 +379,7 @@ eq_color = input.color(color.new(color.blue, 0), 'Equilibrium', group=GROUP_PD)
 pdTF = pdTimeframe == '' ? getCurrentTF() : pdTimeframe
 showPDOnCurrentTF = shouldShowOnCurrentTF(pdTF)
 
-if showPD and showPDOnCurrentTF and pd_high != 0.0 and pd_low != 0.0
+if showPD and showPDOnCurrentTF and timeframe.period == 'D' and pd_high != 0.0 and pd_low != 0.0
     midline = (pd_high + pd_low) / 2
     premium_start = pd_high - 0.25 * (pd_high - pd_low)
     discount_end = pd_high - 0.75 * (pd_high - pd_low)
@@ -441,14 +441,14 @@ pivotLow_ipda = ta.pivotlow(low, ipdaPivotLength, ipdaPivotLength)
 var float ipda_swing_high = na
 var float ipda_swing_low = na
 
-if showIPDA and showIPDAOnCurrentTF and not na(pivotHigh_ipda)
+if showIPDA and showIPDAOnCurrentTF and timeframe.period == 'D' and not na(pivotHigh_ipda)
     ipda_swing_high := high[ipdaPivotLength]
 
-if showIPDA and showIPDAOnCurrentTF and not na(pivotLow_ipda)
+if showIPDA and showIPDAOnCurrentTF and timeframe.period == 'D' and not na(pivotLow_ipda)
     ipda_swing_low := low[ipdaPivotLength]
 
 // Draw IPDA deviation levels
-if showIPDA and showIPDAOnCurrentTF and not na(ipda_swing_high) and not na(ipda_swing_low) and barstate.islast
+if showIPDA and showIPDAOnCurrentTF and timeframe.period == 'D' and not na(ipda_swing_high) and not na(ipda_swing_low) and barstate.islast
     // Calculate equilibrium
     ipda_eq = (ipda_swing_high + ipda_swing_low) / 2
     ipda_range = ipda_swing_high - ipda_swing_low
