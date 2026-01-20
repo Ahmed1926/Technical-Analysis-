@@ -154,6 +154,9 @@ if showOBOnCurrentTF and ta.crossunder(close, structureLow)
         array.push(shortLabels, newLabel)
         array.push(shortOBHighs, lastHigh)  // Store high for BB
         array.push(shortOBLows, lastUpLow)  // Store low for BB
+        array.push(obBreachingBear, false)  // Initialize breach tracking
+        array.push(obBreachLowBear, 0.0)
+        array.push(obBreachHighBear, 0.0)
         lastShortIndex := lastUpIndex
 
 // Update and check bearish OBs
@@ -192,6 +195,9 @@ if showOBOnCurrentTF and array.size(shortLines) > 0
             array.remove(shortLineStart, i)
             array.remove(shortOBHighs, i)
             array.remove(shortOBLows, i)
+            array.remove(obBreachingBear, i)
+            array.remove(obBreachLowBear, i)
+            array.remove(obBreachHighBear, i)
 
             // Create bullish OB
             if (bar_index - lastDownIndex) < 1000 and bar_index > lastLongIndex
@@ -208,6 +214,9 @@ if showOBOnCurrentTF and array.size(shortLines) > 0
                 array.push(longLabels, newLabel)
                 array.push(longOBHighs, lastDown)  // Store high for BB
                 array.push(longOBLows, lastLow)    // Store low for BB
+                array.push(obBreachingBull, false)  // Initialize breach tracking
+                array.push(obBreachLowBull, 0.0)
+                array.push(obBreachHighBull, 0.0)
                 lastLongIndex := bar_index
 
 // Update bullish order blocks
@@ -246,6 +255,9 @@ if showOBOnCurrentTF and array.size(longLines) > 0
             line.delete(lline)
             array.remove(longOBHighs, i)
             array.remove(longOBLows, i)
+            array.remove(obBreachingBull, i)
+            array.remove(obBreachLowBull, i)
+            array.remove(obBreachHighBull, i)
 
 // Record last up and down candles for OB
 if close < open
@@ -305,6 +317,9 @@ if showBB and showBBOnCurrentTF and array.size(shortLines) > 0
             array.remove(shortLineState, i)
             array.remove(shortOBHighs, i)
             array.remove(shortOBLows, i)
+            array.remove(obBreachingBear, i)
+            array.remove(obBreachLowBear, i)
+            array.remove(obBreachHighBear, i)
 
             // Use stored high/low for box dimensions
             bbTop = obHigh
@@ -351,6 +366,9 @@ if showBB and showBBOnCurrentTF and array.size(longLines) > 0
             array.remove(longLineState, i)
             array.remove(longOBHighs, i)
             array.remove(longOBLows, i)
+            array.remove(obBreachingBull, i)
+            array.remove(obBreachLowBull, i)
+            array.remove(obBreachHighBull, i)
 
             // Use stored high/low for box dimensions
             bbTop = obHigh
