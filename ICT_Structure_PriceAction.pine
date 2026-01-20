@@ -253,19 +253,23 @@ lastLow := low < lastLow ? low : lastLow
 // ===================== BREAKER BLOCKS =====================
 var GROUP_BB = 'Breaker Blocks'
 bbTimeframe = input.timeframe('', 'Timeframe for Analysis (Chart)', group=GROUP_BB)
-bullishBBColour = input.color(color.new(#2196F3, 70), title='Bullish BB', group=GROUP_BB)
-bearishBBColour = input.color(color.new(#FF9800, 70), title='Bearish BB', group=GROUP_BB)
+bbShowBoxes = input.bool(true, 'Show as Boxes (vs Lines)', group=GROUP_BB, tooltip='Display BBs as boxes with top/bottom or simple lines')
+bullishBBColour = input.color(color.new(#089981, 70), title='Bullish BB', group=GROUP_BB)
+bearishBBColour = input.color(color.new(#F23645, 70), title='Bearish BB', group=GROUP_BB)
 
 // Determine if BB should display
 bbTF = bbTimeframe == '' ? getCurrentTF() : bbTimeframe
 showBBOnCurrentTF = shouldShowOnCurrentTF(bbTF)
 
-// BB Variables - using lines instead of boxes
-var breakerLines = array.new_line()
+// BB Variables - using boxes and center lines (LuxAlgo style)
+var breakerBoxes = array.new_box()
+var breakerCenterLines = array.new_line()
 var breakerTypes = array.new_int()  // 1 = bullish, -1 = bearish
-var breakerStarts = array.new_int()
-var breakerPrices = array.new_float()  // Track the price level
-var breakerLabels = array.new_label()  // Store labels to delete them later
+var breakerPrices = array.new_float()  // Track the center price level
+var breakerTops = array.new_float()
+var breakerBottoms = array.new_float()
+var breakerLabels = array.new_label()
+var breakerMitigated = array.new_bool()  // Track if BB is mitigated
 
 // Detect Breaker Blocks (OB that got broken becomes BB)
 // Bullish Breaker: Former bearish OB that price broke above
@@ -278,16 +282,37 @@ if showBB and showBBOnCurrentTF and array.size(shortLines) > 0
 
         // If price closes above former bearish OB, it becomes a bullish breaker
         if close > lineY and bar_index > lineLeft + 2
-            // Delete the OB label before creating BB
+            // Delete the OB
+            line.delete(sline)
             label.delete(slabel)
-            // Create breaker line
-            newBB = line.new(lineLeft, lineY, bar_index + 50, lineY, extend=extend.right, color=color.black, width=2, style=line.style_solid)
-            newBBLabel = label.new(x=bar_index, y=lineY, text='BB+', color=color.new(color.white, 100), textcolor=color.green, size=size.small, style=label.style_label_upper_right)
-            array.push(breakerLines, newBB)
+            array.remove(shortLines, i)
+            array.remove(shortLabels, i)
+            array.remove(shortLineStart, i)
+            array.remove(shortLineState, i)
+
+            // Find the actual high/low of the OB candle for box dimensions
+            bbTop = high[bar_index - lineLeft]
+            bbBottom = low[bar_index - lineLeft]
+            bbCenter = math.avg(bbTop, bbBottom)
+
+            // Create BB box and center line
+            if bbShowBoxes
+                newBBBox = box.new(lineLeft, bbTop, bar_index + 50, bbBottom, border_color=bullishBBColour, bgcolor=bullishBBColour, extend=extend.right)
+                array.push(breakerBoxes, newBBBox)
+            else
+                newBBBox = box(na)
+                array.push(breakerBoxes, newBBBox)
+
+            newBBCenter = line.new(lineLeft, bbCenter, bar_index + 50, bbCenter, extend=extend.right, color=color.new(bullishBBColour, 0), width=2, style=line.style_dashed)
+            newBBLabel = label.new(x=bar_index, y=bbCenter, text='BB+', color=color.new(color.white, 100), textcolor=color.green, size=size.small, style=label.style_label_upper_right)
+
+            array.push(breakerCenterLines, newBBCenter)
             array.push(breakerLabels, newBBLabel)
             array.push(breakerTypes, 1)
-            array.push(breakerStarts, bar_index)
-            array.push(breakerPrices, lineY)
+            array.push(breakerPrices, bbCenter)
+            array.push(breakerTops, bbTop)
+            array.push(breakerBottoms, bbBottom)
+            array.push(breakerMitigated, false)
 
 // Bearish Breaker: Former bullish OB that price broke below
 if showBB and showBBOnCurrentTF and array.size(longLines) > 0
@@ -299,66 +324,120 @@ if showBB and showBBOnCurrentTF and array.size(longLines) > 0
 
         // If price closes below former bullish OB, it becomes a bearish breaker
         if close < lineY and bar_index > lineLeft + 2
-            // Delete the OB label before creating BB
+            // Delete the OB
+            line.delete(lline)
             label.delete(llabel)
-            // Create breaker line
-            newBB = line.new(lineLeft, lineY, bar_index + 50, lineY, extend=extend.right, color=color.black, width=2, style=line.style_solid)
-            newBBLabel = label.new(x=bar_index, y=lineY, text='BB-', color=color.new(color.white, 100), textcolor=color.red, size=size.small, style=label.style_label_lower_right)
-            array.push(breakerLines, newBB)
+            array.remove(longLines, i)
+            array.remove(longLabels, i)
+            array.remove(longLineStart, i)
+            array.remove(longLineState, i)
+
+            // Find the actual high/low of the OB candle for box dimensions
+            bbTop = high[bar_index - lineLeft]
+            bbBottom = low[bar_index - lineLeft]
+            bbCenter = math.avg(bbTop, bbBottom)
+
+            // Create BB box and center line
+            if bbShowBoxes
+                newBBBox = box.new(lineLeft, bbTop, bar_index + 50, bbBottom, border_color=bearishBBColour, bgcolor=bearishBBColour, extend=extend.right)
+                array.push(breakerBoxes, newBBBox)
+            else
+                newBBBox = box(na)
+                array.push(breakerBoxes, newBBBox)
+
+            newBBCenter = line.new(lineLeft, bbCenter, bar_index + 50, bbCenter, extend=extend.right, color=color.new(bearishBBColour, 0), width=2, style=line.style_dashed)
+            newBBLabel = label.new(x=bar_index, y=bbCenter, text='BB-', color=color.new(color.white, 100), textcolor=color.red, size=size.small, style=label.style_label_lower_right)
+
+            array.push(breakerCenterLines, newBBCenter)
             array.push(breakerLabels, newBBLabel)
             array.push(breakerTypes, -1)
-            array.push(breakerStarts, bar_index)
-            array.push(breakerPrices, lineY)
+            array.push(breakerPrices, bbCenter)
+            array.push(breakerTops, bbTop)
+            array.push(breakerBottoms, bbBottom)
+            array.push(breakerMitigated, false)
 
-// Update and remove invalidated breaker blocks
-if showBB and showBBOnCurrentTF and array.size(breakerLines) > 0
-    for i = (array.size(breakerLines) - 1) to 0
-        bline = array.get(breakerLines, i)
+// Update Breaker Blocks - check mitigation
+if showBB and showBBOnCurrentTF and array.size(breakerCenterLines) > 0
+    for i = (array.size(breakerCenterLines) - 1) to 0
+        bbox = array.get(breakerBoxes, i)
+        bline = array.get(breakerCenterLines, i)
         blabel = array.get(breakerLabels, i)
         btype = array.get(breakerTypes, i)
         bprice = array.get(breakerPrices, i)
+        btop = array.get(breakerTops, i)
+        bbottom = array.get(breakerBottoms, i)
+        bmitigated = array.get(breakerMitigated, i)
 
-        // Bullish breaker invalidated if price closes below it
-        if btype == 1 and close < bprice
+        // Check if BB is mitigated (price closes through the opposite side)
+        if not bmitigated
+            if btype == 1 and close < bbottom  // Bullish BB mitigated
+                array.set(breakerMitigated, i, true)
+                // Change visual to indicate mitigation
+                if bbShowBoxes
+                    bbox.set_bgcolor(color.new(bullishBBColour, 90))
+            else if btype == -1 and close > btop  // Bearish BB mitigated
+                array.set(breakerMitigated, i, true)
+                // Change visual to indicate mitigation
+                if bbShowBoxes
+                    bbox.set_bgcolor(color.new(bearishBBColour, 90))
+
+        // Remove if completely invalidated
+        if (btype == 1 and close < bbottom - ta.atr(14)) or (btype == -1 and close > btop + ta.atr(14))
+            if bbShowBoxes
+                box.delete(bbox)
             line.delete(bline)
             label.delete(blabel)
-            array.remove(breakerLines, i)
+            array.remove(breakerBoxes, i)
+            array.remove(breakerCenterLines, i)
             array.remove(breakerLabels, i)
             array.remove(breakerTypes, i)
-            array.remove(breakerStarts, i)
             array.remove(breakerPrices, i)
-        // Bearish breaker invalidated if price closes above it
-        else if btype == -1 and close > bprice
-            line.delete(bline)
-            label.delete(blabel)
-            array.remove(breakerLines, i)
-            array.remove(breakerLabels, i)
-            array.remove(breakerTypes, i)
-            array.remove(breakerStarts, i)
-            array.remove(breakerPrices, i)
+            array.remove(breakerTops, i)
+            array.remove(breakerBottoms, i)
+            array.remove(breakerMitigated, i)
 
 // ===================== PROPULSION BLOCKS =====================
 var GROUP_PB = 'Propulsion Blocks'
 pbTimeframe = input.timeframe('', 'Timeframe for Analysis (Chart)', group=GROUP_PB)
-pbMultiplier = input.float(2.0, 'Propulsion Multiplier (x ATR)', minval=1.0, maxval=5.0, step=0.5, group=GROUP_PB, tooltip='Price must move this many times the ATR to become a PB')
-pbAtrLength = input.int(14, 'ATR Length', minval=5, maxval=100, group=GROUP_PB)
+pbShowMeanLine = input.bool(true, 'Show Mean Threshold Line', group=GROUP_PB)
 bullishPBColour = input.color(color.new(#089981, 60), title='Bullish PB', group=GROUP_PB)
 bearishPBColour = input.color(color.new(#F23645, 60), title='Bearish PB', group=GROUP_PB)
-
-// Calculate ATR for propulsion threshold
-pbATR = ta.atr(pbAtrLength)
 
 pbTF = pbTimeframe == '' ? getCurrentTF() : pbTimeframe
 showPBOnCurrentTF = shouldShowOnCurrentTF(pbTF)
 
-// PB tracking arrays - using lines instead of boxes
+// PB tracking arrays - with breach detection (LuxAlgo style)
 var propulsionLines = array.new_line()
+var propulsionMeanLines = array.new_line()  // Mean threshold line
 var propulsionTypes = array.new_int()  // 1 = bullish, -1 = bearish
 var propulsionPrices = array.new_float()  // Track the price level
-var propulsionLabels = array.new_label()  // Store labels to delete them later
+var propulsionLabels = array.new_label()
+var propulsionStarts = array.new_int()
 
-// Check if existing OBs become Propulsion Blocks
-// Bullish OB becomes PB when tested and price propels upward strongly
+// Breach tracking for each OB
+var obBreachingBull = array.new_bool()  // Is bullish OB currently being breached?
+var obBreachLowBull = array.new_float()  // Lowest low during breach
+var obBreachHighBull = array.new_float()  // Highest high during breach
+
+var obBreachingBear = array.new_bool()  // Is bearish OB currently being breached?
+var obBreachLowBear = array.new_float()  // Lowest low during breach
+var obBreachHighBear = array.new_float()  // Highest high during breach
+
+// Initialize breach arrays if needed
+if array.size(obBreachingBull) < array.size(longLines)
+    while array.size(obBreachingBull) < array.size(longLines)
+        array.push(obBreachingBull, false)
+        array.push(obBreachLowBull, high)
+        array.push(obBreachHighBull, low)
+
+if array.size(obBreachingBear) < array.size(shortLines)
+    while array.size(obBreachingBear) < array.size(shortLines)
+        array.push(obBreachingBear, false)
+        array.push(obBreachLowBear, high)
+        array.push(obBreachHighBear, low)
+
+// Check for Propulsion Blocks via breach detection
+// Bullish OB: When price breaches into OB and makes new high, that high becomes PB
 if showPB and showPBOnCurrentTF and array.size(longLines) > 0
     for i = (array.size(longLines) - 1) to 0
         lline = array.get(longLines, i)
@@ -367,31 +446,50 @@ if showPB and showPBOnCurrentTF and array.size(longLines) > 0
         lineLeft = line.get_x1(lline)
         lstate = array.get(longLineState, i)
 
-        // Check if price tested this OB (touched it) AND it's not already mitigated
-        if low <= lineY and high >= lineY and bar_index > lineLeft + 1 and lstate == 0
-            // Calculate propulsion: distance from OB level to current high
-            propulsionDistance = high - lineY
-            propulsionThreshold = pbATR * pbMultiplier
+        isBreaching = array.get(obBreachingBull, i)
+        breachLow = array.get(obBreachLowBull, i)
+        breachHigh = array.get(obBreachHighBull, i)
 
-            // Check if price propelled upward strongly
-            if propulsionDistance > propulsionThreshold
-                // This OB became a Propulsion Block
-                newPB = line.new(lineLeft, lineY, bar_index + 50, lineY, extend=extend.right, color=color.black, width=2, style=line.style_solid)
-                newPBLabel = label.new(x=bar_index, y=lineY, text='PB+', color=color.new(color.white, 100), textcolor=color.green, size=size.small, style=label.style_label_upper_right)
-                array.push(propulsionLines, newPB)
-                array.push(propulsionLabels, newPBLabel)
-                array.push(propulsionTypes, 1)
-                array.push(propulsionPrices, lineY)
+        // Check if price is breaching into the OB zone
+        if low <= lineY and high > lineY and bar_index > lineLeft + 1 and lstate == 0 and open > lineY
+            if not isBreaching
+                // Start tracking breach
+                array.set(obBreachingBull, i, true)
+                array.set(obBreachLowBull, i, low)
+                array.set(obBreachHighBull, i, high)
+            else
+                // Update breach extremes
+                array.set(obBreachLowBull, i, math.min(breachLow, low))
+                array.set(obBreachHighBull, i, math.max(breachHigh, high))
 
-                // Remove from regular OB array
-                line.delete(lline)
-                label.delete(llabel)
-                array.remove(longLines, i)
-                array.remove(longLabels, i)
-                array.remove(longLineStart, i)
-                array.remove(longLineState, i)
+        // Check if price propelled upward creating new high
+        if isBreaching and close > lineY
+            breachHigh := array.get(obBreachHighBull, i)
+            // Create PB at the breach high level
+            newPB = line.new(lineLeft, breachHigh, bar_index + 50, breachHigh, extend=extend.right, color=bullishPBColour, width=2, style=line.style_solid)
+            pbMean = math.avg(breachHigh, lineY)
+            newPBMean = line.new(lineLeft, pbMean, bar_index + 50, pbMean, extend=extend.right, color=color.new(bullishPBColour, 50), width=1, style=line.style_dotted)
+            newPBLabel = label.new(x=lineLeft, y=breachHigh, text='PB+', color=color.new(color.white, 100), textcolor=color.green, size=size.small, style=label.style_label_upper_right)
 
-// Bearish OB becomes PB when tested and price propels downward strongly
+            array.push(propulsionLines, newPB)
+            array.push(propulsionMeanLines, newPBMean)
+            array.push(propulsionLabels, newPBLabel)
+            array.push(propulsionTypes, 1)
+            array.push(propulsionPrices, breachHigh)
+            array.push(propulsionStarts, lineLeft)
+
+            // Remove OB from arrays
+            line.delete(lline)
+            label.delete(llabel)
+            array.remove(longLines, i)
+            array.remove(longLabels, i)
+            array.remove(longLineStart, i)
+            array.remove(longLineState, i)
+            array.remove(obBreachingBull, i)
+            array.remove(obBreachLowBull, i)
+            array.remove(obBreachHighBull, i)
+
+// Bearish OB: When price breaches into OB and makes new low, that low becomes PB
 if showPB and showPBOnCurrentTF and array.size(shortLines) > 0
     for i = (array.size(shortLines) - 1) to 0
         sline = array.get(shortLines, i)
@@ -400,54 +498,84 @@ if showPB and showPBOnCurrentTF and array.size(shortLines) > 0
         lineLeft = line.get_x1(sline)
         sstate = array.get(shortLineState, i)
 
-        // Check if price tested this OB (touched it) AND it's not already mitigated
-        if low <= lineY and high >= lineY and bar_index > lineLeft + 1 and sstate == 0
-            // Calculate propulsion: distance from OB level to current low
-            propulsionDistance = lineY - low
-            propulsionThreshold = pbATR * pbMultiplier
+        isBreaching = array.get(obBreachingBear, i)
+        breachLow = array.get(obBreachLowBear, i)
+        breachHigh = array.get(obBreachHighBear, i)
 
-            // Check if price propelled downward strongly
-            if propulsionDistance > propulsionThreshold
-                // This OB became a Propulsion Block
-                newPB = line.new(lineLeft, lineY, bar_index + 50, lineY, extend=extend.right, color=color.black, width=2, style=line.style_solid)
-                newPBLabel = label.new(x=bar_index, y=lineY, text='PB-', color=color.new(color.white, 100), textcolor=color.red, size=size.small, style=label.style_label_lower_right)
-                array.push(propulsionLines, newPB)
-                array.push(propulsionLabels, newPBLabel)
-                array.push(propulsionTypes, -1)
-                array.push(propulsionPrices, lineY)
+        // Check if price is breaching into the OB zone
+        if high >= lineY and low < lineY and bar_index > lineLeft + 1 and sstate == 0 and open < lineY
+            if not isBreaching
+                // Start tracking breach
+                array.set(obBreachingBear, i, true)
+                array.set(obBreachLowBear, i, low)
+                array.set(obBreachHighBear, i, high)
+            else
+                // Update breach extremes
+                array.set(obBreachLowBear, i, math.min(breachLow, low))
+                array.set(obBreachHighBear, i, math.max(breachHigh, high))
 
-                // Remove from regular OB array
-                line.delete(sline)
-                label.delete(slabel)
-                array.remove(shortLines, i)
-                array.remove(shortLabels, i)
-                array.remove(shortLineStart, i)
-                array.remove(shortLineState, i)
+        // Check if price propelled downward creating new low
+        if isBreaching and close < lineY
+            breachLow := array.get(obBreachLowBear, i)
+            // Create PB at the breach low level
+            newPB = line.new(lineLeft, breachLow, bar_index + 50, breachLow, extend=extend.right, color=bearishPBColour, width=2, style=line.style_solid)
+            pbMean = math.avg(breachLow, lineY)
+            newPBMean = line.new(lineLeft, pbMean, bar_index + 50, pbMean, extend=extend.right, color=color.new(bearishPBColour, 50), width=1, style=line.style_dotted)
+            newPBLabel = label.new(x=lineLeft, y=breachLow, text='PB-', color=color.new(color.white, 100), textcolor=color.red, size=size.small, style=label.style_label_lower_right)
 
-// Update and clean up old Propulsion Blocks
+            array.push(propulsionLines, newPB)
+            array.push(propulsionMeanLines, newPBMean)
+            array.push(propulsionLabels, newPBLabel)
+            array.push(propulsionTypes, -1)
+            array.push(propulsionPrices, breachLow)
+            array.push(propulsionStarts, lineLeft)
+
+            // Remove OB from arrays
+            line.delete(sline)
+            label.delete(slabel)
+            array.remove(shortLines, i)
+            array.remove(shortLabels, i)
+            array.remove(shortLineStart, i)
+            array.remove(shortLineState, i)
+            array.remove(obBreachingBear, i)
+            array.remove(obBreachLowBear, i)
+            array.remove(obBreachHighBear, i)
+
+// Update and clean up Propulsion Blocks
 if showPB and showPBOnCurrentTF and array.size(propulsionLines) > 0
     for i = (array.size(propulsionLines) - 1) to 0
         pline = array.get(propulsionLines, i)
+        pmean = array.get(propulsionMeanLines, i)
         plabel = array.get(propulsionLabels, i)
         ptype = array.get(propulsionTypes, i)
         pprice = array.get(propulsionPrices, i)
 
+        // Show/hide mean line based on setting
+        if not pbShowMeanLine
+            line.set_color(pmean, color.new(color.white, 100))
+
         // Bullish PB invalidated if price closes below it
         if ptype == 1 and close < pprice
             line.delete(pline)
+            line.delete(pmean)
             label.delete(plabel)
             array.remove(propulsionLines, i)
+            array.remove(propulsionMeanLines, i)
             array.remove(propulsionLabels, i)
             array.remove(propulsionTypes, i)
             array.remove(propulsionPrices, i)
+            array.remove(propulsionStarts, i)
         // Bearish PB invalidated if price closes above it
         else if ptype == -1 and close > pprice
             line.delete(pline)
+            line.delete(pmean)
             label.delete(plabel)
             array.remove(propulsionLines, i)
+            array.remove(propulsionMeanLines, i)
             array.remove(propulsionLabels, i)
             array.remove(propulsionTypes, i)
             array.remove(propulsionPrices, i)
+            array.remove(propulsionStarts, i)
 
 // ===================== FVG & IFVG (Fair Value Gaps & Inverse FVG) =====================
 var GROUP_FVG = 'Fair Value Gaps & IFVG'
