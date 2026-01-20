@@ -135,18 +135,23 @@ float structureLow = ta.lowest(low, obRange)[1]
 int structureLowIndex = structureLowIndexPointer(obRange)
 
 // Bearish break of structure - draw horizontal line at OB high
-if showOB and showOBOnCurrentTF and ta.crossunder(close, structureLow)
+if showOBOnCurrentTF and ta.crossunder(close, structureLow)
     if (bar_index - lastUpIndex) < 1000
         array.push(shortLineStart, bar_index)
         array.push(shortLineState, 0)
         newLine = line.new(lastUpIndex, lastHigh, bar_index + 50, lastHigh, extend=extend.right, color=color.black, width=2, style=line.style_solid)
         newLabel = label.new(x=bar_index, y=lastHigh, text='OB-', color=color.new(color.white, 100), textcolor=color.red, size=size.small, style=label.style_label_lower_right)
+        // Hide visuals if OB display is off
+        if not showOB
+            line.set_color(newLine, color.new(color.black, 100))
+            label.delete(newLabel)
+            newLabel := label(na)
         array.push(shortLines, newLine)
         array.push(shortLabels, newLabel)
         lastShortIndex := lastUpIndex
 
-// Bullish break of structure - draw horizontal line at OB low
-if showOB and showOBOnCurrentTF and array.size(shortLines) > 0
+// Update and check bearish OBs
+if showOBOnCurrentTF and array.size(shortLines) > 0
     for i = (array.size(shortLines) - 1) to 0
         sline = array.get(shortLines, i)
         slabel = array.get(shortLabels, i)
@@ -155,16 +160,20 @@ if showOB and showOBOnCurrentTF and array.size(shortLines) > 0
         lineY = line.get_y1(sline)
 
         // Check if mitigated (price touched the line)
-        if (high > lineY and low < lineY and bar_index > lstart and lstate == 0 and useMitigatedBlocks)
-            // Delete old line and label, create new ones with mitigated color
-            lineX1 = line.get_x1(sline)
-            lineX2 = line.get_x2(sline)
-            line.delete(sline)
-            label.delete(slabel)
-            newMitigatedLine = line.new(lineX1, lineY, lineX2, lineY, extend=extend.right, color=mitigatedOBColour, width=2, style=line.style_solid)
-            newMitigatedLabel = label.new(x=bar_index, y=lineY, text='OB-', color=color.new(color.white, 100), textcolor=mitigatedOBColour, size=size.small, style=label.style_label_lower_right)
-            array.set(shortLines, i, newMitigatedLine)
-            array.set(shortLabels, i, newMitigatedLabel)
+        if (high > lineY and low < lineY and bar_index > lstart and lstate == 0)
+            if useMitigatedBlocks and showOB
+                // Delete old line and label, create new ones with mitigated color
+                lineX1 = line.get_x1(sline)
+                lineX2 = line.get_x2(sline)
+                line.delete(sline)
+                label.delete(slabel)
+                newMitigatedLine = line.new(lineX1, lineY, lineX2, lineY, extend=extend.right, color=mitigatedOBColour, width=2, style=line.style_solid)
+                newMitigatedLabel = label.new(x=bar_index, y=lineY, text='OB-', color=color.new(color.white, 100), textcolor=mitigatedOBColour, size=size.small, style=label.style_label_lower_right)
+                array.set(shortLines, i, newMitigatedLine)
+                array.set(shortLabels, i, newMitigatedLabel)
+            else
+                // Just delete label if mitigated blocks are off or OB display is off
+                label.delete(slabel)
             array.set(shortLineState, i, 1)
 
         // Remove if price closes above
@@ -182,12 +191,17 @@ if showOB and showOBOnCurrentTF and array.size(shortLines) > 0
                 array.push(longLineState, 0)
                 newLine = line.new(lastDownIndex, lastLow, bar_index + 50, lastLow, extend=extend.right, color=color.black, width=2, style=line.style_solid)
                 newLabel = label.new(x=bar_index, y=lastLow, text='OB+', color=color.new(color.white, 100), textcolor=color.green, size=size.small, style=label.style_label_upper_right)
+                // Hide visuals if OB display is off
+                if not showOB
+                    line.set_color(newLine, color.new(color.black, 100))
+                    label.delete(newLabel)
+                    newLabel := label(na)
                 array.push(longLines, newLine)
                 array.push(longLabels, newLabel)
                 lastLongIndex := bar_index
 
 // Update bullish order blocks
-if showOB and showOBOnCurrentTF and array.size(longLines) > 0
+if showOBOnCurrentTF and array.size(longLines) > 0
     for i = (array.size(longLines) - 1) to 0
         lline = array.get(longLines, i)
         llabel = array.get(longLabels, i)
@@ -197,7 +211,7 @@ if showOB and showOBOnCurrentTF and array.size(longLines) > 0
 
         // Check if mitigated (price touched the line)
         if (low <= lineY and high > lineY and bar_index > lstart and lstate == 0)
-            if useMitigatedBlocks
+            if useMitigatedBlocks and showOB
                 // Delete old line and label, create new ones with mitigated color
                 lineX1 = line.get_x1(lline)
                 lineX2 = line.get_x2(lline)
@@ -208,7 +222,7 @@ if showOB and showOBOnCurrentTF and array.size(longLines) > 0
                 array.set(longLines, i, newMitigatedLine)
                 array.set(longLabels, i, newMitigatedLabel)
             else
-                // If mitigated blocks are off, just delete the label
+                // Just delete label if mitigated blocks are off or OB display is off
                 label.delete(llabel)
             array.set(longLineState, i, 1)
 
@@ -326,9 +340,13 @@ if showBB and showBBOnCurrentTF and array.size(breakerLines) > 0
 // ===================== PROPULSION BLOCKS =====================
 var GROUP_PB = 'Propulsion Blocks'
 pbTimeframe = input.timeframe('', 'Timeframe for Analysis (Chart)', group=GROUP_PB)
-pbMultiplier = input.float(2.0, 'Propulsion Multiplier', minval=1.0, step=0.5, group=GROUP_PB, tooltip='Price must move this many times the OB size to become a PB')
+pbMultiplier = input.float(2.0, 'Propulsion Multiplier (x ATR)', minval=1.0, maxval=5.0, step=0.5, group=GROUP_PB, tooltip='Price must move this many times the ATR to become a PB')
+pbAtrLength = input.int(14, 'ATR Length', minval=5, maxval=100, group=GROUP_PB)
 bullishPBColour = input.color(color.new(#089981, 60), title='Bullish PB', group=GROUP_PB)
 bearishPBColour = input.color(color.new(#F23645, 60), title='Bearish PB', group=GROUP_PB)
+
+// Calculate ATR for propulsion threshold
+pbATR = ta.atr(pbAtrLength)
 
 pbTF = pbTimeframe == '' ? getCurrentTF() : pbTimeframe
 showPBOnCurrentTF = shouldShowOnCurrentTF(pbTF)
@@ -340,20 +358,23 @@ var propulsionPrices = array.new_float()  // Track the price level
 var propulsionLabels = array.new_label()  // Store labels to delete them later
 
 // Check if existing OBs become Propulsion Blocks
-// Bullish OB becomes PB when tested and price propels upward
+// Bullish OB becomes PB when tested and price propels upward strongly
 if showPB and showPBOnCurrentTF and array.size(longLines) > 0
     for i = (array.size(longLines) - 1) to 0
         lline = array.get(longLines, i)
         llabel = array.get(longLabels, i)
         lineY = line.get_y1(lline)
         lineLeft = line.get_x1(lline)
+        lstate = array.get(longLineState, i)
 
-        // Check if price tested this OB (touched it)
-        if low <= lineY and high >= lineY and bar_index > lineLeft + 1
-            // Check if price then propelled upward (strong move)
-            // For PB, we need a reference range - using ATR or fixed percentage
-            propulsionThreshold = lineY * (1 + (pbMultiplier / 100))  // 2% default
-            if high > propulsionThreshold
+        // Check if price tested this OB (touched it) AND it's not already mitigated
+        if low <= lineY and high >= lineY and bar_index > lineLeft + 1 and lstate == 0
+            // Calculate propulsion: distance from OB level to current high
+            propulsionDistance = high - lineY
+            propulsionThreshold = pbATR * pbMultiplier
+
+            // Check if price propelled upward strongly
+            if propulsionDistance > propulsionThreshold
                 // This OB became a Propulsion Block
                 newPB = line.new(lineLeft, lineY, bar_index + 50, lineY, extend=extend.right, color=color.black, width=2, style=line.style_solid)
                 newPBLabel = label.new(x=bar_index, y=lineY, text='PB+', color=color.new(color.white, 100), textcolor=color.green, size=size.small, style=label.style_label_upper_right)
@@ -370,19 +391,23 @@ if showPB and showPBOnCurrentTF and array.size(longLines) > 0
                 array.remove(longLineStart, i)
                 array.remove(longLineState, i)
 
-// Bearish OB becomes PB when tested and price propels downward
+// Bearish OB becomes PB when tested and price propels downward strongly
 if showPB and showPBOnCurrentTF and array.size(shortLines) > 0
     for i = (array.size(shortLines) - 1) to 0
         sline = array.get(shortLines, i)
         slabel = array.get(shortLabels, i)
         lineY = line.get_y1(sline)
         lineLeft = line.get_x1(sline)
+        sstate = array.get(shortLineState, i)
 
-        // Check if price tested this OB
-        if low <= lineY and high >= lineY and bar_index > lineLeft + 1
-            // Check if price then propelled downward
-            propulsionThreshold = lineY * (1 - (pbMultiplier / 100))
-            if low < propulsionThreshold
+        // Check if price tested this OB (touched it) AND it's not already mitigated
+        if low <= lineY and high >= lineY and bar_index > lineLeft + 1 and sstate == 0
+            // Calculate propulsion: distance from OB level to current low
+            propulsionDistance = lineY - low
+            propulsionThreshold = pbATR * pbMultiplier
+
+            // Check if price propelled downward strongly
+            if propulsionDistance > propulsionThreshold
                 // This OB became a Propulsion Block
                 newPB = line.new(lineLeft, lineY, bar_index + 50, lineY, extend=extend.right, color=color.black, width=2, style=line.style_solid)
                 newPBLabel = label.new(x=bar_index, y=lineY, text='PB-', color=color.new(color.white, 100), textcolor=color.red, size=size.small, style=label.style_label_lower_right)
