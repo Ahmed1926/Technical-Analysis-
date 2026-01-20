@@ -116,6 +116,14 @@ var shortLabels = array.new_label()  // Store labels to delete them later
 var shortOBHighs = array.new_float()  // Store OB candle highs for BB
 var shortOBLows = array.new_float()   // Store OB candle lows for BB
 
+// Breach tracking arrays for PB detection
+var obBreachingBull = array.new_bool()   // Is bullish OB currently being breached?
+var obBreachLowBull = array.new_float()  // Lowest low during breach
+var obBreachHighBull = array.new_float() // Highest high during breach
+var obBreachingBear = array.new_bool()   // Is bearish OB currently being breached?
+var obBreachLowBear = array.new_float()  // Lowest low during breach
+var obBreachHighBear = array.new_float() // Highest high during breach
+
 var int lastDownIndex = 0
 var float lastDown = 0
 var float lastLow = 0
@@ -451,28 +459,6 @@ var propulsionTypes = array.new_int()  // 1 = bullish, -1 = bearish
 var propulsionPrices = array.new_float()  // Track the price level
 var propulsionLabels = array.new_label()
 var propulsionStarts = array.new_int()
-
-// Breach tracking for each OB
-var obBreachingBull = array.new_bool()  // Is bullish OB currently being breached?
-var obBreachLowBull = array.new_float()  // Lowest low during breach
-var obBreachHighBull = array.new_float()  // Highest high during breach
-
-var obBreachingBear = array.new_bool()  // Is bearish OB currently being breached?
-var obBreachLowBear = array.new_float()  // Lowest low during breach
-var obBreachHighBear = array.new_float()  // Highest high during breach
-
-// Initialize breach arrays if needed
-if array.size(obBreachingBull) < array.size(longLines)
-    while array.size(obBreachingBull) < array.size(longLines)
-        array.push(obBreachingBull, false)
-        array.push(obBreachLowBull, high)
-        array.push(obBreachHighBull, low)
-
-if array.size(obBreachingBear) < array.size(shortLines)
-    while array.size(obBreachingBear) < array.size(shortLines)
-        array.push(obBreachingBear, false)
-        array.push(obBreachLowBear, high)
-        array.push(obBreachHighBear, low)
 
 // Check for Propulsion Blocks via breach detection
 // Bullish OB: When price breaches into OB and makes new high, that high becomes PB
