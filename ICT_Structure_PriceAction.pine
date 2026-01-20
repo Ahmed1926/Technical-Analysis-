@@ -107,10 +107,14 @@ var longLines = array.new_line()
 var longLineStart = array.new_int()
 var longLineState = array.new_int()
 var longLabels = array.new_label()  // Store labels to delete them later
+var longOBHighs = array.new_float()  // Store OB candle highs for BB
+var longOBLows = array.new_float()   // Store OB candle lows for BB
 var shortLines = array.new_line()
 var shortLineStart = array.new_int()
 var shortLineState = array.new_int()
 var shortLabels = array.new_label()  // Store labels to delete them later
+var shortOBHighs = array.new_float()  // Store OB candle highs for BB
+var shortOBLows = array.new_float()   // Store OB candle lows for BB
 
 var int lastDownIndex = 0
 var float lastDown = 0
@@ -148,6 +152,8 @@ if showOBOnCurrentTF and ta.crossunder(close, structureLow)
             newLabel := label(na)
         array.push(shortLines, newLine)
         array.push(shortLabels, newLabel)
+        array.push(shortOBHighs, lastHigh)  // Store high for BB
+        array.push(shortOBLows, lastUpLow)  // Store low for BB
         lastShortIndex := lastUpIndex
 
 // Update and check bearish OBs
@@ -184,6 +190,8 @@ if showOBOnCurrentTF and array.size(shortLines) > 0
             array.remove(shortLines, i)
             array.remove(shortLabels, i)
             array.remove(shortLineStart, i)
+            array.remove(shortOBHighs, i)
+            array.remove(shortOBLows, i)
 
             // Create bullish OB
             if (bar_index - lastDownIndex) < 1000 and bar_index > lastLongIndex
@@ -198,6 +206,8 @@ if showOBOnCurrentTF and array.size(shortLines) > 0
                     newLabel := label(na)
                 array.push(longLines, newLine)
                 array.push(longLabels, newLabel)
+                array.push(longOBHighs, lastDown)  // Store high for BB
+                array.push(longOBLows, lastLow)    // Store low for BB
                 lastLongIndex := bar_index
 
 // Update bullish order blocks
@@ -234,6 +244,8 @@ if showOBOnCurrentTF and array.size(longLines) > 0
             label.delete(llabel)
             array.remove(longLabels, i)
             line.delete(lline)
+            array.remove(longOBHighs, i)
+            array.remove(longOBLows, i)
 
 // Record last up and down candles for OB
 if close < open
@@ -279,6 +291,8 @@ if showBB and showBBOnCurrentTF and array.size(shortLines) > 0
         slabel = array.get(shortLabels, i)
         lineY = line.get_y1(sline)
         lineLeft = line.get_x1(sline)
+        obHigh = array.get(shortOBHighs, i)
+        obLow = array.get(shortOBLows, i)
 
         // If price closes above former bearish OB, it becomes a bullish breaker
         if close > lineY and bar_index > lineLeft + 2
@@ -289,10 +303,12 @@ if showBB and showBBOnCurrentTF and array.size(shortLines) > 0
             array.remove(shortLabels, i)
             array.remove(shortLineStart, i)
             array.remove(shortLineState, i)
+            array.remove(shortOBHighs, i)
+            array.remove(shortOBLows, i)
 
-            // Find the actual high/low of the OB candle for box dimensions
-            bbTop = high[bar_index - lineLeft]
-            bbBottom = low[bar_index - lineLeft]
+            // Use stored high/low for box dimensions
+            bbTop = obHigh
+            bbBottom = obLow
             bbCenter = math.avg(bbTop, bbBottom)
 
             // Create BB box and center line
@@ -321,6 +337,8 @@ if showBB and showBBOnCurrentTF and array.size(longLines) > 0
         llabel = array.get(longLabels, i)
         lineY = line.get_y1(lline)
         lineLeft = line.get_x1(lline)
+        obHigh = array.get(longOBHighs, i)
+        obLow = array.get(longOBLows, i)
 
         // If price closes below former bullish OB, it becomes a bearish breaker
         if close < lineY and bar_index > lineLeft + 2
@@ -331,10 +349,12 @@ if showBB and showBBOnCurrentTF and array.size(longLines) > 0
             array.remove(longLabels, i)
             array.remove(longLineStart, i)
             array.remove(longLineState, i)
+            array.remove(longOBHighs, i)
+            array.remove(longOBLows, i)
 
-            // Find the actual high/low of the OB candle for box dimensions
-            bbTop = high[bar_index - lineLeft]
-            bbBottom = low[bar_index - lineLeft]
+            // Use stored high/low for box dimensions
+            bbTop = obHigh
+            bbBottom = obLow
             bbCenter = math.avg(bbTop, bbBottom)
 
             // Create BB box and center line
@@ -485,6 +505,8 @@ if showPB and showPBOnCurrentTF and array.size(longLines) > 0
             array.remove(longLabels, i)
             array.remove(longLineStart, i)
             array.remove(longLineState, i)
+            array.remove(longOBHighs, i)
+            array.remove(longOBLows, i)
             array.remove(obBreachingBull, i)
             array.remove(obBreachLowBull, i)
             array.remove(obBreachHighBull, i)
@@ -537,6 +559,8 @@ if showPB and showPBOnCurrentTF and array.size(shortLines) > 0
             array.remove(shortLabels, i)
             array.remove(shortLineStart, i)
             array.remove(shortLineState, i)
+            array.remove(shortOBHighs, i)
+            array.remove(shortOBLows, i)
             array.remove(obBreachingBear, i)
             array.remove(obBreachLowBear, i)
             array.remove(obBreachHighBear, i)
