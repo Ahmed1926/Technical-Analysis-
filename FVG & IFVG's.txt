@@ -11,18 +11,18 @@ showGaps = input.string("Both", "Show Gaps", options=["FVG Only", "IFVG Only", "
 // === Inputs for 50% Line Marker ===
 show50Line = input.bool(true, "Show 50% Line")
 gap50LineWidth = input.int(1,"50% Line Width", minval=1, maxval=5)
-gap50LineStyleOpt = input.string("Dotted", "50% Line Style", options=["Solid", "Dotted", "Dashed"])
+gap50LineStyleOpt = input.string("Solid", "50% Line Style", options=["Solid", "Dotted", "Dashed"])
 gap50LineStyle = gap50LineStyleOpt == "Solid" ? line.style_solid : gap50LineStyleOpt == "Dashed" ? line.style_dashed : line.style_dotted
 
 // === Color Settings ===
 bullFVGBorderColor = input.color(color.rgb(76, 175, 79, 100), "Bullish FVG Border", group="Style", inline="bull_fvg")
-bullFVGBGColor = input.color(color.new(color.green, 85), "Background", group="Style", inline="bull_fvg")
+bullFVGBGColor = input.color(color.new(#0066CC, 90), "Background", group="Style", inline="bull_fvg")
 bearFVGBorderColor = input.color(color.rgb(255, 82, 82, 100), "Bearish FVG Border", group="Style", inline="bear_fvg")
-bearFVGBGColor = input.color(color.new(#a14343, 85), "Background", group="Style", inline="bear_fvg")
+bearFVGBGColor = input.color(color.new(#0066CC, 90), "Background", group="Style", inline="bear_fvg")
 bullIFVGBorderColor = input.color(color.rgb(0, 0, 0, 100), "Bullish IFVG Border", group="Style", inline="bull_ifvg")
-bullIFVGBGColor = input.color(color.new(color.black, 85), "Background", group="Style", inline="bull_ifvg")
+bullIFVGBGColor = input.color(color.new(#0066CC, 90), "Background", group="Style", inline="bull_ifvg")
 bearIFVGBorderColor = input.color(color.rgb(0, 0, 0, 100), "Bearish IFVG Border", group="Style", inline="bear_ifvg")
-bearIFVGBGColor = input.color(color.new(color.black, 85), "Background", group="Style", inline="bear_ifvg")
+bearIFVGBGColor = input.color(color.new(#0066CC, 90), "Background", group="Style", inline="bear_ifvg")
 
 // === User Defined Type for Gap ===
 type Gap
