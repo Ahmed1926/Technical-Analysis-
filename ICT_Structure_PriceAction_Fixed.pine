@@ -14,7 +14,7 @@ showDisplacement = input.bool(true, 'Show Displacement', group=GROUP_GLOBAL)
 showMB = input.bool(true, 'Show Mitigation Blocks', group=GROUP_GLOBAL)
 
 // ===================== TIMEFRAME VISIBILITY =====================
-canShowWeekly() => timeframe.period == 'W' or timeframe.period == 'D'
+canShowWeekly() => timeframe.period == 'W'
 canShowDaily() => (timeframe.in_seconds()/60) <= 1440 and (timeframe.in_seconds()/60) >= 240
 canShow4H() => (timeframe.in_seconds()/60) <= 240 and (timeframe.in_seconds()/60) >= 30
 canShow1H() => (timeframe.in_seconds()/60) <= 60 and (timeframe.in_seconds()/60) >= 5
@@ -61,9 +61,9 @@ var GROUP_OB = 'Order Blocks'
 obTimeframe = input.timeframe('', 'Timeframe for Analysis (Chart)', group=GROUP_OB)
 obRange = input.int(30, 'Candle Range', minval=5, maxval=100, step=1, group=GROUP_OB)
 useMitigatedBlocks = input.bool(false, 'Show Mitigated Blocks', group=GROUP_OB)
-bearishOBColour = input.color(color.new(color.red, 90), title='Bearish OB', group=GROUP_OB)
-bullishOBColour = input.color(color.new(color.green, 90), title='Bullish OB', group=GROUP_OB)
-mitigatedOBColour = input.color(color.new(#808080, 85), title='Mitigated OB', group=GROUP_OB)
+bearishOBColour = input.color(color.new(color.red, 0), title='Bearish OB Line Color', group=GROUP_OB)
+bullishOBColour = input.color(color.new(color.green, 0), title='Bullish OB Line Color', group=GROUP_OB)
+mitigatedOBColour = input.color(color.new(#808080, 0), title='Mitigated OB Line Color', group=GROUP_OB)
 
 // --- Breaker Blocks Settings ---
 var GROUP_BB = 'Breaker Blocks'
@@ -376,11 +376,11 @@ if showOBOnCurrentTF and ta.crossunder(close, structureLow)
     if (bar_index - lastUpIndex) < 1000
         array.push(shortLineStart, bar_index)
         array.push(shortLineState, 0)
-        newLine = line.new(lastUpIndex, lastHigh, bar_index + 50, lastHigh, extend=extend.right, color=color.black, width=2, style=line.style_solid)
+        newLine = line.new(lastUpIndex, lastHigh, bar_index + 50, lastHigh, extend=extend.right, color=color.new(bearishOBColour, 0), width=2, style=line.style_solid)
         newLabel = label.new(x=bar_index, y=lastHigh, text='OB-', color=color.new(color.white, 100), textcolor=color.new(bearishOBColour, 0), size=size.small, style=label.style_label_lower_right)
 
         if not showOB
-            line.set_color(newLine, color.new(color.black, 100))
+            line.set_color(newLine, color.new(bearishOBColour, 100))
             label.delete(newLabel)
             newLabel := label(na)
 
@@ -409,7 +409,7 @@ if showOBOnCurrentTF and array.size(shortLines) > 0
                 lineX2 = line.get_x2(sline)
                 line.delete(sline)
                 label.delete(slabel)
-                newMitigatedLine = line.new(lineX1, lineY, lineX2, lineY, extend=extend.right, color=color.black, width=2, style=line.style_solid)
+                newMitigatedLine = line.new(lineX1, lineY, lineX2, lineY, extend=extend.right, color=color.new(mitigatedOBColour, 0), width=2, style=line.style_solid)
                 newMitigatedLabel = label.new(x=bar_index, y=lineY, text='OB-', color=color.new(color.white, 100), textcolor=color.new(mitigatedOBColour, 0), size=size.small, style=label.style_label_lower_right)
                 array.set(shortLines, i, newMitigatedLine)
                 array.set(shortLabels, i, newMitigatedLabel)
@@ -432,14 +432,14 @@ if showOBOnCurrentTF and array.size(shortLines) > 0
             array.remove(obBreachHighBear, i)
 
 // --- CREATE NEW BULLISH OB ---
-if (bar_index - lastDownIndex) < 1000 and bar_index > lastLongIndex
+if showOBOnCurrentTF and (bar_index - lastDownIndex) < 1000 and bar_index > lastLongIndex
     array.push(longLineStart, bar_index + 1)
     array.push(longLineState, 0)
-    newLine = line.new(lastDownIndex, lastLow, bar_index + 50, lastLow, extend=extend.right, color=color.black, width=2, style=line.style_solid)
+    newLine = line.new(lastDownIndex, lastLow, bar_index + 50, lastLow, extend=extend.right, color=color.new(bullishOBColour, 0), width=2, style=line.style_solid)
     newLabel = label.new(x=bar_index, y=lastLow, text='OB+', color=color.new(color.white, 100), textcolor=color.new(bullishOBColour, 0), size=size.small, style=label.style_label_upper_right)
 
     if not showOB
-        line.set_color(newLine, color.new(color.black, 100))
+        line.set_color(newLine, color.new(bullishOBColour, 100))
         label.delete(newLabel)
         newLabel := label(na)
 
@@ -468,7 +468,7 @@ if showOBOnCurrentTF and array.size(longLines) > 0
                 lineX2 = line.get_x2(lline)
                 line.delete(lline)
                 label.delete(llabel)
-                newMitigatedLine = line.new(lineX1, lineY, lineX2, lineY, extend=extend.right, color=color.black, width=2, style=line.style_solid)
+                newMitigatedLine = line.new(lineX1, lineY, lineX2, lineY, extend=extend.right, color=color.new(mitigatedOBColour, 0), width=2, style=line.style_solid)
                 newMitigatedLabel = label.new(x=bar_index, y=lineY, text='OB+', color=color.new(color.white, 100), textcolor=color.new(mitigatedOBColour, 0), size=size.small, style=label.style_label_upper_right)
                 array.set(longLines, i, newMitigatedLine)
                 array.set(longLabels, i, newMitigatedLabel)
