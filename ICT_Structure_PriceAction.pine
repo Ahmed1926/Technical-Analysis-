@@ -1,7 +1,7 @@
 //@version=6
 // Combined ICT Structure & Price Action Indicator
-// FIXED: Breaker & Propulsion Logic Reordered + Opacity 10% + Limited Block Count
-indicator('ICT Structure & Price Action [Fixed]', overlay=true, max_bars_back=5000, max_boxes_count=500, max_labels_count=500, max_lines_count=500)
+// FIXED: 1D Visibility, Label Duplication, Right-Aligned Labels
+indicator('ICT Structure & Price Action [Master]', overlay=true, max_bars_back=5000, max_boxes_count=500, max_labels_count=500, max_lines_count=500)
 
 // ===================== GLOBAL SETTINGS =====================
 var GROUP_GLOBAL = 'Global Settings'
@@ -13,13 +13,12 @@ showMSS_BOS = input.bool(true, 'Show MSS/BOS', group=GROUP_GLOBAL)
 showDisplacement = input.bool(true, 'Show Displacement', group=GROUP_GLOBAL)
 showMB = input.bool(true, 'Show Mitigation Blocks', group=GROUP_GLOBAL)
 
-// ===================== TIMEFRAME VISIBILITY =====================
-canShowWeekly() => timeframe.period == 'W' or timeframe.period == 'D'
-canShowDaily() => (timeframe.in_seconds()/60) <= 1440 and (timeframe.in_seconds()/60) >= 240
-canShow4H() => (timeframe.in_seconds()/60) <= 240 and (timeframe.in_seconds()/60) >= 30
-canShow1H() => (timeframe.in_seconds()/60) <= 60 and (timeframe.in_seconds()/60) >= 5
-canShow5M() => (timeframe.in_seconds()/60) <= 5 and (timeframe.in_seconds()/60) >= 1
-canShow1M() => (timeframe.in_seconds()/60) <= 5
+// ===================== TIMEFRAME VISIBILITY (FIXED) =====================
+canShowWeekly() => timeframe.isweekly
+canShowDaily()  => timeframe.isdaily
+canShow4H()     => timeframe.isintraday and timeframe.multiplier >= 240
+canShow1H()     => timeframe.isintraday and timeframe.multiplier >= 60 and timeframe.multiplier < 240
+canShowLTF()    => timeframe.isintraday and timeframe.multiplier < 60
 
 getCurrentTF() =>
     string result = timeframe.period
@@ -31,10 +30,8 @@ getCurrentTF() =>
         result := '240'
     else if canShow1H()
         result := '60'
-    else if canShow5M()
-        result := '5'
-    else if canShow1M()
-        result := '1'
+    else
+        result := 'LTF'
     result
 
 shouldShowOnCurrentTF(string conceptTF) =>
@@ -47,10 +44,6 @@ shouldShowOnCurrentTF(string conceptTF) =>
         show := canShow4H()
     else if conceptTF == '60'
         show := canShow1H()
-    else if conceptTF == '5'
-        show := canShow5M()
-    else if conceptTF == '1'
-        show := canShow1M()
     else
         show := true
     show
@@ -95,6 +88,8 @@ var shortLineState = array.new_int()
 var shortLabels = array.new_label()
 var shortOBHighs = array.new_float()
 var shortOBLows = array.new_float()
+
+var lastOBBar = 0  // CREATION LOCK to prevent duplicate OB labels
 
 // Breach Tracking for Propulsion
 var obBreachingBull = array.new_bool()
@@ -380,12 +375,12 @@ float structureLow = ta.lowest(low, obRange)[1]
 int structureLowIndex = structureLowIndexPointer(obRange)
 
 // --- CREATE NEW BEARISH OB ---
-if showOBOnCurrentTF and ta.crossunder(close, structureLow)
+if showOBOnCurrentTF and ta.crossunder(close, structureLow) and bar_index > lastOBBar
     if (bar_index - lastUpIndex) < 1000
         array.push(shortLineStart, bar_index)
         array.push(shortLineState, 0)
         newLine = line.new(lastUpIndex, lastHigh, bar_index + 50, lastHigh, extend=extend.right, color=color.black, width=2, style=line.style_solid)
-        newLabel = label.new(x=bar_index, y=lastHigh, text='OB-', color=color.new(color.white, 100), textcolor=color.red, size=size.small, style=label.style_label_lower_right)
+        newLabel = label.new(x=bar_index, y=lastHigh, text='OB-', color=color.new(color.white, 100), textcolor=color.red, size=size.small, style=label.style_label_left)
 
         if not showOB
             line.set_color(newLine, color.new(color.black, 100))
@@ -400,6 +395,7 @@ if showOBOnCurrentTF and ta.crossunder(close, structureLow)
         array.push(obBreachLowBear, 0.0)
         array.push(obBreachHighBear, 0.0)
         lastShortIndex := lastUpIndex
+        lastOBBar := bar_index
 
 // --- UPDATE EXISTING BEARISH OBs ---
 if showOBOnCurrentTF and array.size(shortLines) > 0
@@ -418,7 +414,7 @@ if showOBOnCurrentTF and array.size(shortLines) > 0
                 line.delete(sline)
                 label.delete(slabel)
                 newMitigatedLine = line.new(lineX1, lineY, lineX2, lineY, extend=extend.right, color=mitigatedOBColour, width=2, style=line.style_solid)
-                newMitigatedLabel = label.new(x=bar_index, y=lineY, text='OB-', color=color.new(color.white, 100), textcolor=mitigatedOBColour, size=size.small, style=label.style_label_lower_right)
+                newMitigatedLabel = label.new(x=bar_index, y=lineY, text='OB-', color=color.new(color.white, 100), textcolor=mitigatedOBColour, size=size.small, style=label.style_label_left)
                 array.set(shortLines, i, newMitigatedLine)
                 array.set(shortLabels, i, newMitigatedLabel)
             else
@@ -440,11 +436,11 @@ if showOBOnCurrentTF and array.size(shortLines) > 0
             array.remove(obBreachHighBear, i)
 
 // --- CREATE NEW BULLISH OB ---
-if (bar_index - lastDownIndex) < 1000 and bar_index > lastLongIndex
+if (bar_index - lastDownIndex) < 1000 and bar_index > lastLongIndex and bar_index > lastOBBar
     array.push(longLineStart, bar_index + 1)
     array.push(longLineState, 0)
     newLine = line.new(lastDownIndex, lastLow, bar_index + 50, lastLow, extend=extend.right, color=color.black, width=2, style=line.style_solid)
-    newLabel = label.new(x=bar_index, y=lastLow, text='OB+', color=color.new(color.white, 100), textcolor=color.green, size=size.small, style=label.style_label_upper_right)
+    newLabel = label.new(x=bar_index, y=lastLow, text='OB+', color=color.new(color.white, 100), textcolor=color.green, size=size.small, style=label.style_label_left)
 
     if not showOB
         line.set_color(newLine, color.new(color.black, 100))
@@ -459,6 +455,7 @@ if (bar_index - lastDownIndex) < 1000 and bar_index > lastLongIndex
     array.push(obBreachLowBull, 0.0)
     array.push(obBreachHighBull, 0.0)
     lastLongIndex := bar_index
+    lastOBBar := bar_index
 
 // --- UPDATE EXISTING BULLISH OBs ---
 if showOBOnCurrentTF and array.size(longLines) > 0
@@ -477,7 +474,7 @@ if showOBOnCurrentTF and array.size(longLines) > 0
                 line.delete(lline)
                 label.delete(llabel)
                 newMitigatedLine = line.new(lineX1, lineY, lineX2, lineY, extend=extend.right, color=mitigatedOBColour, width=2, style=line.style_solid)
-                newMitigatedLabel = label.new(x=bar_index, y=lineY, text='OB+', color=color.new(color.white, 100), textcolor=mitigatedOBColour, size=size.small, style=label.style_label_upper_right)
+                newMitigatedLabel = label.new(x=bar_index, y=lineY, text='OB+', color=color.new(color.white, 100), textcolor=mitigatedOBColour, size=size.small, style=label.style_label_left)
                 array.set(longLines, i, newMitigatedLine)
                 array.set(longLabels, i, newMitigatedLabel)
             else
@@ -512,6 +509,21 @@ if close > open
 
 lastHigh := high > lastHigh ? high : lastHigh
 lastLow := low < lastLow ? low : lastLow
+
+// ---------------------------------------------------------
+// UPDATE LABEL POSITIONS (Keep labels on right edge)
+// ---------------------------------------------------------
+if barstate.islast
+    if array.size(longLabels) > 0
+        for i = 0 to array.size(longLabels) - 1
+            llabel = array.get(longLabels, i)
+            if not na(llabel)
+                label.set_x(llabel, bar_index)
+    if array.size(shortLabels) > 0
+        for i = 0 to array.size(shortLabels) - 1
+            slabel = array.get(shortLabels, i)
+            if not na(slabel)
+                label.set_x(slabel, bar_index)
 
 // ---------------------------------------------------------
 // STEP 4: CLEANUP & DISPLAY OF OTHER CONCEPTS
