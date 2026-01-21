@@ -367,28 +367,20 @@ var float lastHigh = 0
 var int lastLongIndex = 0
 var int lastShortIndex = 0
 
-structureLowIndexPointer(len) =>
-    float minValue = ta.highest(high, obRange)[1]
-    int minIndex = bar_index
-    for i = 1 to len
-        if low[i] < minValue
-            minValue := low[i]
-            minIndex := bar_index[i]
-    minIndex
-
+// Optimized: Use built-in function instead of loop
 float structureLow = ta.lowest(low, obRange)[1]
-int structureLowIndex = structureLowIndexPointer(obRange)
+int structureLowIndex = bar_index + ta.lowestbars(low, obRange)[1]
 
 // --- CREATE NEW BEARISH OB ---
 if showOBOnCurrentTF and ta.crossunder(close, structureLow)
     if (bar_index - lastUpIndex) < 1000
         array.push(shortLineStart, bar_index)
         array.push(shortLineState, 0)
-        newLine = line.new(lastUpIndex, lastHigh, bar_index + 50, lastHigh, extend=extend.right, color=color.black, width=2, style=line.style_solid)
+        newLine = line.new(lastUpIndex, lastHigh, bar_index + 50, lastHigh, extend=extend.right, color=bearishOBColour, width=2, style=line.style_solid)
         newLabel = label.new(x=bar_index, y=lastHigh, text='OB-', color=color.new(color.white, 100), textcolor=color.red, size=size.small, style=label.style_label_lower_right)
 
         if not showOB
-            line.set_color(newLine, color.new(color.black, 100))
+            line.set_color(newLine, color.new(bearishOBColour, 100))
             label.delete(newLabel)
             newLabel := label(na)
 
@@ -443,11 +435,11 @@ if showOBOnCurrentTF and array.size(shortLines) > 0
 if (bar_index - lastDownIndex) < 1000 and bar_index > lastLongIndex
     array.push(longLineStart, bar_index + 1)
     array.push(longLineState, 0)
-    newLine = line.new(lastDownIndex, lastLow, bar_index + 50, lastLow, extend=extend.right, color=color.black, width=2, style=line.style_solid)
+    newLine = line.new(lastDownIndex, lastLow, bar_index + 50, lastLow, extend=extend.right, color=bullishOBColour, width=2, style=line.style_solid)
     newLabel = label.new(x=bar_index, y=lastLow, text='OB+', color=color.new(color.white, 100), textcolor=color.green, size=size.small, style=label.style_label_upper_right)
 
     if not showOB
-        line.set_color(newLine, color.new(color.black, 100))
+        line.set_color(newLine, color.new(bullishOBColour, 100))
         label.delete(newLabel)
         newLabel := label(na)
 
