@@ -17,8 +17,8 @@ showAlerts = input.bool(false, "Trigger Alerts", group = "Extras")
 useMitigatedBlocks = input.bool(false, "Show Mitigated Blocks", group = "Extras")
 
 // colours & styles
-bearishOBColour = input.color(color.rgb(219,166,50, 80), title = "Bearish Order Block Colour", group = "STYLES")
-bullishOBColour = input.color(color.rgb(192,230,174, 60), title= "Bullish Order Block Colour", group = "STYLES")
+bearishOBColour = input.color(color.rgb(219,166,50, 90), title = "Bearish Order Block Colour", group = "STYLES")
+bullishOBColour = input.color(color.rgb(192,230,174, 90), title= "Bullish Order Block Colour", group = "STYLES")
 mitigatedOBColour = input.color(color.rgb(207,203,202, 80), title= "Mitigated Order Block Colour", group = "STYLES")
 BOSCandleColour = input.color(color.yellow, title= "Breaker Candle Colour", group = "STYLES")
 shortRetestCandleColour = input.color(color.purple, title= "Short Re-Test Candle Colour", group = "STYLES")
