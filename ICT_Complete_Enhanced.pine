@@ -705,8 +705,8 @@ ny_rth_ses = (ny_ssth) + (ny_sstm) + "-" + (ny_esth) + ny_estm
 
 // ADR Calculation
 adr(length) =>
-    range = high - low
-    ta.sma(range[1], length)
+    daily_range = high - low
+    ta.sma(daily_range[1], length)
 
 to_pips(val) =>
     is_forex_pips ? math.round(val/syminfo.mintick/10) : math.round(val/syminfo.mintick)
