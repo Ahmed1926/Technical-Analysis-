@@ -999,15 +999,7 @@ if showOB and per
             if is_breaching and close > element.top and showPB
                 breach_high := ob_breach_high_bull.get(i)
                 // Create Propulsion Block
-                newPB = propulsion.new(
-                    breach_high
-                    , math.avg(breach_high, element.top)
-                    , time_to_bar_index(element.loc)
-                    , line.new(time_to_bar_index(element.loc), breach_high, n + 50, breach_high, extend=extend.right, color=cPBplus, width=2, style=line.style_solid)
-                    , line.new(time_to_bar_index(element.loc), math.avg(breach_high, element.top), n + 50, math.avg(breach_high, element.top), extend=extend.right, color=color.new(cPBplus, 50), width=1, style=line.style_dotted)
-                    , label.new(time_to_bar_index(element.loc), breach_high, 'PB+', color=color.new(color.white, 100), textcolor=color.green, size=size.small, style=label.style_label_upper_right)
-                    , 1
-                )
+                newPB = propulsion.new(breach_high, math.avg(breach_high, element.top), time_to_bar_index(element.loc), line.new(time_to_bar_index(element.loc), breach_high, n + 50, breach_high, extend=extend.right, color=cPBplus, width=2, style=line.style_solid), line.new(time_to_bar_index(element.loc), math.avg(breach_high, element.top), n + 50, math.avg(breach_high, element.top), extend=extend.right, color=color.new(cPBplus, 50), width=1, style=line.style_dotted), label.new(time_to_bar_index(element.loc), breach_high, 'PB+', color=color.new(color.white, 100), textcolor=color.green, size=size.small, style=label.style_label_upper_right), 1)
                 a_propulsion_bull.unshift(newPB)
                 // Remove OB (replaced by propulsion)
                 bullish_ob.remove(i)
@@ -1095,15 +1087,7 @@ if showOB and per
             // Propulsion
             if is_breaching and close < element.btm and showPB
                 breach_low := ob_breach_low_bear.get(i)
-                newPB = propulsion.new(
-                    breach_low
-                    , math.avg(breach_low, element.btm)
-                    , time_to_bar_index(element.loc)
-                    , line.new(time_to_bar_index(element.loc), breach_low, n + 50, breach_low, extend=extend.right, color=cPBminus, width=2, style=line.style_solid)
-                    , line.new(time_to_bar_index(element.loc), math.avg(breach_low, element.btm), n + 50, math.avg(breach_low, element.btm), extend=extend.right, color=color.new(cPBminus, 50), width=1, style=line.style_dotted)
-                    , label.new(time_to_bar_index(element.loc), breach_low, 'PB-', color=color.new(color.white, 100), textcolor=color.red, size=size.small, style=label.style_label_lower_right)
-                    , -1
-                )
+                newPB = propulsion.new(breach_low, math.avg(breach_low, element.btm), time_to_bar_index(element.loc), line.new(time_to_bar_index(element.loc), breach_low, n + 50, breach_low, extend=extend.right, color=cPBminus, width=2, style=line.style_solid), line.new(time_to_bar_index(element.loc), math.avg(breach_low, element.btm), n + 50, math.avg(breach_low, element.btm), extend=extend.right, color=color.new(cPBminus, 50), width=1, style=line.style_dotted), label.new(time_to_bar_index(element.loc), breach_low, 'PB-', color=color.new(color.white, 100), textcolor=color.red, size=size.small, style=label.style_label_lower_right), -1)
                 a_propulsion_bear.unshift(newPB)
                 bearish_ob.remove(i)
                 ob_breaching_bear.remove(i)
