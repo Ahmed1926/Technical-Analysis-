@@ -1013,17 +1013,7 @@ if showOB and per
                 if math.min(close, open) < element.btm and showBB
                     // Create Breaker Block
                     bbCenter = math.avg(element.top, element.btm)
-                    newBB = breaker.new(
-                        element.top
-                        , element.btm
-                        , bbCenter
-                        , time_to_bar_index(element.loc)
-                        , breakerShowBoxes ? box.new(time_to_bar_index(element.loc), element.top, n + 50, element.btm, border_color=cBB_minA, bgcolor=cBB_minA, extend=extend.right, xloc=xloc.bar_index) : box(na)
-                        , line.new(time_to_bar_index(element.loc), bbCenter, n + 50, bbCenter, extend=extend.right, color=color.new(cBB_minA, 0), width=2, style=line.style_dashed)
-                        , label.new(n, bbCenter, 'BB-', color=color.new(color.white, 100), textcolor=color.red, size=size.small, style=label.style_label_lower_right)
-                        , false
-                        , -1
-                    )
+                    newBB = breaker.new(element.top, element.btm, bbCenter, time_to_bar_index(element.loc), breakerShowBoxes ? box.new(time_to_bar_index(element.loc), element.top, n + 50, element.btm, border_color=cBB_minA, bgcolor=cBB_minA, extend=extend.right, xloc=xloc.bar_index) : box(na), line.new(time_to_bar_index(element.loc), bbCenter, n + 50, bbCenter, extend=extend.right, color=color.new(cBB_minA, 0), width=2, style=line.style_dashed), label.new(n, bbCenter, 'BB-', color=color.new(color.white, 100), textcolor=color.red, size=size.small, style=label.style_label_lower_right), false, -1)
                     a_breaker_bear.unshift(newBB)
                     // Remove OB
                     bullish_ob.remove(i)
@@ -1099,17 +1089,7 @@ if showOB and per
             if not element.breaker
                 if math.max(close, open) > element.top and showBB
                     bbCenter = math.avg(element.top, element.btm)
-                    newBB = breaker.new(
-                        element.top
-                        , element.btm
-                        , bbCenter
-                        , time_to_bar_index(element.loc)
-                        , breakerShowBoxes ? box.new(time_to_bar_index(element.loc), element.top, n + 50, element.btm, border_color=cBBplusA, bgcolor=cBBplusA, extend=extend.right, xloc=xloc.bar_index) : box(na)
-                        , line.new(time_to_bar_index(element.loc), bbCenter, n + 50, bbCenter, extend=extend.right, color=color.new(cBBplusA, 0), width=2, style=line.style_dashed)
-                        , label.new(n, bbCenter, 'BB+', color=color.new(color.white, 100), textcolor=color.green, size=size.small, style=label.style_label_upper_right)
-                        , false
-                        , 1
-                    )
+                    newBB = breaker.new(element.top, element.btm, bbCenter, time_to_bar_index(element.loc), breakerShowBoxes ? box.new(time_to_bar_index(element.loc), element.top, n + 50, element.btm, border_color=cBBplusA, bgcolor=cBBplusA, extend=extend.right, xloc=xloc.bar_index) : box(na), line.new(time_to_bar_index(element.loc), bbCenter, n + 50, bbCenter, extend=extend.right, color=color.new(cBBplusA, 0), width=2, style=line.style_dashed), label.new(n, bbCenter, 'BB+', color=color.new(color.white, 100), textcolor=color.green, size=size.small, style=label.style_label_upper_right), false, 1)
                     a_breaker_bull.unshift(newBB)
                     bearish_ob.remove(i)
                     ob_breaching_bear.remove(i)
