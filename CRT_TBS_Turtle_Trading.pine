@@ -1,0 +1,320 @@
+// This work is licensed under a Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0) https://creativecommons.org/licenses/by-nc-sa/4.0/
+// © Claude - CRT + TBS + Turtle Trading System
+// Combining Candle Range Theory (A-M-D), Turtle Body Soup, and Classic Turtle Trading
+
+//@version=5
+indicator("CRT + TBS + Turtle Trading System", overlay=true, max_boxes_count=500, max_labels_count=500, max_lines_count=500)
+
+//-----------------------------------------------------------------------------}
+//Input Settings
+//-----------------------------------------------------------------------------{
+
+// === CLASSIC TURTLE TRADING SETTINGS ===
+turtleGroup = "Classic Turtle Trading"
+showDonchian = input.bool(true, "Show Donchian Channels", group=turtleGroup)
+donchian20Period = input.int(20, "Donchian 20 Period", minval=5, maxval=100, group=turtleGroup)
+donchian55Period = input.int(55, "Donchian 55 Period", minval=20, maxval=200, group=turtleGroup)
+showATR = input.bool(true, "Show ATR Stops", group=turtleGroup)
+atrPeriod = input.int(14, "ATR Period", minval=5, maxval=50, group=turtleGroup)
+atrMultiplier = input.float(2.0, "ATR Stop Multiplier", minval=0.5, maxval=5.0, step=0.5, group=turtleGroup)
+
+donchian20Color = input.color(color.new(color.blue, 80), "Donchian 20 Color", group=turtleGroup, inline="d20")
+donchian55Color = input.color(color.new(color.purple, 80), "Donchian 55 Color", group=turtleGroup, inline="d55")
+
+// === CRT (CANDLE RANGE THEORY) SETTINGS ===
+crtGroup = "Candle Range Theory (CRT)"
+showCRT = input.bool(true, "Show CRT A-M-D Pattern", group=crtGroup)
+crtLookback = input.int(50, "CRT Pattern Lookback", minval=20, maxval=200, group=crtGroup)
+accumulationColor = input.color(color.new(color.yellow, 70), "Accumulation Box", group=crtGroup, inline="crt1")
+manipulationColor = input.color(color.new(color.orange, 70), "Manipulation Box", group=crtGroup, inline="crt2")
+distributionColor = input.color(color.new(color.green, 70), "Distribution (Bullish)", group=crtGroup, inline="crt3")
+distributionBearColor = input.color(color.new(color.red, 70), "Distribution (Bearish)", group=crtGroup, inline="crt4")
+
+showTP = input.bool(true, "Show TP Levels", group=crtGroup)
+tp1Color = input.color(color.new(color.lime, 50), "TP1 (50%)", group=crtGroup, inline="tp1")
+tp2Color = input.color(color.new(color.green, 50), "TP2 (100%)", group=crtGroup, inline="tp2")
+
+// === TURTLE SOUP (TBS) SETTINGS ===
+tbsGroup = "Turtle Soup (TBS)"
+showTBS = input.bool(true, "Show Turtle Soup Signals", group=tbsGroup)
+tbsSwingPeriod = input.int(20, "Swing High/Low Period", minval=5, maxval=100, group=tbsGroup)
+tbsMaxWickPercent = input.float(30, "Max Wick % for TBS", minval=10, maxval=80, step=5, group=tbsGroup, tooltip="Max percentage of candle that can be wick for valid TBS")
+bullTBSColor = input.color(color.new(color.lime, 0), "Bullish TBS", group=tbsGroup, inline="tbs1")
+bearTBSColor = input.color(color.new(color.red, 0), "Bearish TBS", group=tbsGroup, inline="tbs2")
+
+// === SIGNAL SETTINGS ===
+signalGroup = "Entry/Exit Signals"
+showEntrySignals = input.bool(true, "Show Entry Signals", group=signalGroup)
+showExitSignals = input.bool(true, "Show Exit Signals", group=signalGroup)
+combineSignals = input.bool(true, "Combine TBS + CRT Signals", group=signalGroup, tooltip="Require both TBS and CRT confirmation for entry")
+
+//-----------------------------------------------------------------------------}
+//Classic Turtle Trading - Donchian Channels
+//-----------------------------------------------------------------------------{
+
+// Donchian 20
+donchian20High = ta.highest(high, donchian20Period)
+donchian20Low = ta.lowest(low, donchian20Period)
+donchian20Mid = (donchian20High + donchian20Low) / 2
+
+// Donchian 55
+donchian55High = ta.highest(high, donchian55Period)
+donchian55Low = ta.lowest(low, donchian55Period)
+donchian55Mid = (donchian55High + donchian55Low) / 2
+
+// Plot Donchian Channels
+p1 = plot(showDonchian ? donchian20High : na, "Donchian 20 High", color=donchian20Color, linewidth=1)
+p2 = plot(showDonchian ? donchian20Low : na, "Donchian 20 Low", color=donchian20Color, linewidth=1)
+fill(p1, p2, color=color.new(donchian20Color, 90))
+
+p3 = plot(showDonchian ? donchian55High : na, "Donchian 55 High", color=donchian55Color, linewidth=2)
+p4 = plot(showDonchian ? donchian55Low : na, "Donchian 55 Low", color=donchian55Color, linewidth=2)
+fill(p3, p4, color=color.new(donchian55Color, 95))
+
+//-----------------------------------------------------------------------------}
+//ATR Calculation and Stops
+//-----------------------------------------------------------------------------{
+
+atrValue = ta.atr(atrPeriod)
+
+// ATR-based stops
+var float longStopPrice = na
+var float shortStopPrice = na
+
+// Update stops on breakout
+if close > donchian55High[1]
+    longStopPrice := close - (atrValue * atrMultiplier)
+
+if close < donchian55Low[1]
+    shortStopPrice := close + (atrValue * atrMultiplier)
+
+// Trail stops
+if not na(longStopPrice)
+    longStopPrice := math.max(longStopPrice, close - (atrValue * atrMultiplier))
+
+if not na(shortStopPrice)
+    shortStopPrice := math.min(shortStopPrice, close + (atrValue * atrMultiplier))
+
+// Plot ATR stops
+plot(showATR and not na(longStopPrice) ? longStopPrice : na, "Long Stop", color=color.new(color.red, 0), style=plot.style_cross, linewidth=2)
+plot(showATR and not na(shortStopPrice) ? shortStopPrice : na, "Short Stop", color=color.new(color.lime, 0), style=plot.style_cross, linewidth=2)
+
+//-----------------------------------------------------------------------------}
+//Turtle Soup (TBS) Detection
+//-----------------------------------------------------------------------------{
+
+// Identify swing highs and lows
+swingHigh = ta.highest(high, tbsSwingPeriod)
+swingLow = ta.lowest(low, tbsSwingPeriod)
+
+// Bullish Turtle Soup: Price breaks below swing low but closes back inside
+bullishTBS = false
+bearishTBS = false
+
+if showTBS
+    // Bullish TBS: Low breaks below previous swing low, but close is above it (false breakdown)
+    wickPercent = (high - close) / (high - low) * 100
+    bullishTBS := low < swingLow[1] and close > swingLow[1] and wickPercent < tbsMaxWickPercent
+
+    // Bearish TBS: High breaks above previous swing high, but close is below it (false breakout)
+    wickPercentBear = (close - low) / (high - low) * 100
+    bearishTBS := high > swingHigh[1] and close < swingHigh[1] and wickPercentBear < tbsMaxWickPercent
+
+// Plot TBS signals
+plotshape(showTBS and bullishTBS, "Bullish TBS", shape.triangleup, location.belowbar, bullTBSColor, size=size.small, text="TBS")
+plotshape(showTBS and bearishTBS, "Bearish TBS", shape.triangledown, location.abovebar, bearTBSColor, size=size.small, text="TBS")
+
+//-----------------------------------------------------------------------------}
+//CRT (Candle Range Theory) - A-M-D Pattern Detection
+//-----------------------------------------------------------------------------{
+
+// CRT Variables
+var box accumulationBox = na
+var box manipulationBox = na
+var box distributionBox = na
+var line tp1Line = na
+var line tp2Line = na
+var label crtLabel = na
+
+// AMD Pattern States
+var int crtState = 0  // 0 = none, 1 = accumulation found, 2 = manipulation found, 3 = distribution
+var int accumulationBar = 0
+var float accumulationHigh = 0.0
+var float accumulationLow = 0.0
+var int manipulationBar = 0
+var bool isBullishCRT = false
+
+if showCRT
+    // Detect Accumulation: Look for ranging candle (small body relative to previous candles)
+    bodySize = math.abs(close - open)
+    prevBodySize = math.abs(close[1] - open[1])
+    candleRange = high - low
+
+    // Accumulation criteria: Relatively small body, defined range
+    isAccumulation = bodySize < prevBodySize * 0.8 and candleRange > 0
+
+    // Detect Manipulation (Turtle Soup): Next candle sweeps high/low but closes inside
+    isManipulation = false
+    isBullishManip = false
+
+    if crtState == 1 and bar_index > accumulationBar
+        // Check if current candle swept accumulation range
+        sweptLow = low < accumulationLow and close > accumulationLow
+        sweptHigh = high > accumulationHigh and close < accumulationHigh
+
+        // Manipulation candle must close inside accumulation range
+        closedInside = close >= accumulationLow and close <= accumulationHigh
+
+        if (sweptLow or sweptHigh) and closedInside
+            isManipulation := true
+            isBullishManip := sweptLow  // Swept low = bullish (expecting upward distribution)
+            manipulationBar := bar_index
+            crtState := 2
+
+    // Detect Distribution: Strong directional move after manipulation
+    isDistribution = false
+
+    if crtState == 2 and bar_index > manipulationBar
+        // Bullish distribution: Strong bullish candle after bullish manipulation
+        strongBullish = close > open and bodySize > candleRange * 0.6
+        strongBearish = close < open and bodySize > candleRange * 0.6
+
+        if isBullishCRT and strongBullish
+            isDistribution := true
+        else if not isBullishCRT and strongBearish
+            isDistribution := true
+
+        if isDistribution
+            crtState := 3
+
+    // Start new pattern on accumulation
+    if isAccumulation and crtState == 0
+        accumulationBar := bar_index
+        accumulationHigh := high
+        accumulationLow := low
+        crtState := 1
+        isBullishCRT := false
+
+    // Update manipulation direction
+    if isManipulation
+        isBullishCRT := isBullishManip
+
+//-----------------------------------------------------------------------------}
+//CRT Visual Elements - Boxes and TP Levels
+//-----------------------------------------------------------------------------{
+
+if showCRT and crtState >= 1
+    // Draw accumulation box
+    if crtState == 1 and na(accumulationBox)
+        accumulationBox := box.new(accumulationBar, accumulationHigh, bar_index + 10, accumulationLow,
+                                   border_color=accumulationColor, bgcolor=accumulationColor,
+                                   text="A", text_color=color.white, text_size=size.small)
+
+    // Update accumulation box
+    if not na(accumulationBox) and crtState >= 1
+        box.set_right(accumulationBox, bar_index + 5)
+
+    // Draw manipulation box
+    if crtState == 2 and na(manipulationBox)
+        manipulationBox := box.new(manipulationBar, high, manipulationBar + 5, low,
+                                   border_color=manipulationColor, bgcolor=manipulationColor,
+                                   text="M", text_color=color.white, text_size=size.small)
+
+    // Draw distribution box and TP levels
+    if crtState == 3
+        distColor = isBullishCRT ? distributionColor : distributionBearColor
+        if na(distributionBox)
+            distributionBox := box.new(bar_index, high, bar_index + 10, low,
+                                       border_color=distColor, bgcolor=distColor,
+                                       text="D", text_color=color.white, text_size=size.small)
+
+        // Calculate TP levels based on accumulation range
+        accRange = accumulationHigh - accumulationLow
+
+        if showTP
+            if isBullishCRT
+                // Bullish TPs: 50% and 100% above accumulation high
+                tp1Price = accumulationHigh + (accRange * 0.5)
+                tp2Price = accumulationHigh + accRange
+
+                if na(tp1Line)
+                    tp1Line := line.new(accumulationBar, tp1Price, bar_index + 20, tp1Price,
+                                       color=tp1Color, width=2, style=line.style_dashed)
+                    tp2Line := line.new(accumulationBar, tp2Price, bar_index + 20, tp2Price,
+                                       color=tp2Color, width=2, style=line.style_dashed)
+                else
+                    line.set_x2(tp1Line, bar_index + 20)
+                    line.set_x2(tp2Line, bar_index + 20)
+            else
+                // Bearish TPs: 50% and 100% below accumulation low
+                tp1Price = accumulationLow - (accRange * 0.5)
+                tp2Price = accumulationLow - accRange
+
+                if na(tp1Line)
+                    tp1Line := line.new(accumulationBar, tp1Price, bar_index + 20, tp1Price,
+                                       color=tp1Color, width=2, style=line.style_dashed)
+                    tp2Line := line.new(accumulationBar, tp2Price, bar_index + 20, tp2Price,
+                                       color=tp2Color, width=2, style=line.style_dashed)
+                else
+                    line.set_x2(tp1Line, bar_index + 20)
+                    line.set_x2(tp2Line, bar_index + 20)
+
+        // Reset pattern after distribution completes
+        if bar_index > manipulationBar + 10
+            crtState := 0
+            accumulationBox := na
+            manipulationBox := na
+            distributionBox := na
+            tp1Line := na
+            tp2Line := na
+
+//-----------------------------------------------------------------------------}
+//Combined Entry/Exit Signals
+//-----------------------------------------------------------------------------{
+
+// Turtle System 1 (20-period) entries
+turtle20Long = close > donchian20High[1]
+turtle20Short = close < donchian20Low[1]
+
+// Turtle System 2 (55-period) entries
+turtle55Long = close > donchian55High[1]
+turtle55Short = close < donchian55Low[1]
+
+// Exit signals (10-period for System 1, 20-period for System 2)
+exit10High = ta.highest(high, 10)
+exit10Low = ta.lowest(low, 10)
+
+exitLong = close < exit10Low[1]
+exitShort = close > exit10High[1]
+
+// Combined signals: TBS + CRT + Turtle
+var bool combinedLongSignal = false
+var bool combinedShortSignal = false
+
+if combineSignals
+    // Require TBS confirmation + Turtle breakout
+    combinedLongSignal := bullishTBS and (turtle20Long or turtle55Long)
+    combinedShortSignal := bearishTBS and (turtle20Short or turtle55Short)
+else
+    // Just use Turtle breakouts
+    combinedLongSignal := turtle20Long or turtle55Long
+    combinedShortSignal := turtle20Short or turtle55Short
+
+// Plot entry signals
+plotshape(showEntrySignals and combinedLongSignal, "Long Entry", shape.circle, location.belowbar, color.new(color.green, 0), size=size.normal, text="LONG")
+plotshape(showEntrySignals and combinedShortSignal, "Short Entry", shape.circle, location.abovebar, color.new(color.red, 0), size=size.normal, text="SHORT")
+
+// Plot exit signals
+plotshape(showExitSignals and exitLong, "Exit Long", shape.xcross, location.abovebar, color.new(color.red, 30), size=size.tiny, text="Exit")
+plotshape(showExitSignals and exitShort, "Exit Short", shape.xcross, location.belowbar, color.new(color.green, 30), size=size.tiny, text="Exit")
+
+//-----------------------------------------------------------------------------}
+//Alerts
+//-----------------------------------------------------------------------------{
+
+alertcondition(combinedLongSignal, "Long Entry Signal", "CRT+TBS+Turtle: Long Entry Signal")
+alertcondition(combinedShortSignal, "Short Entry Signal", "CRT+TBS+Turtle: Short Entry Signal")
+alertcondition(bullishTBS, "Bullish Turtle Soup", "Bullish Turtle Soup Detected")
+alertcondition(bearishTBS, "Bearish Turtle Soup", "Bearish Turtle Soup Detected")
+alertcondition(exitLong, "Exit Long", "Exit Long Position")
+alertcondition(exitShort, "Exit Short", "Exit Short Position")
