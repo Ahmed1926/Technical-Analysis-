@@ -66,7 +66,7 @@ showLabels = input.bool  (          false, title = 'Show Historical Polarity Cha
 //-----------------------------------------------------------------------------{
 showBB           = input.bool  (  true    , title = 'Show Breaker Blocks'            ,   group = 'Breaker Blocks'                                  )
 breakerShowBoxes = input.bool  (  true    , title = 'Show as Boxes'                  ,   group = 'Breaker Blocks'                                  )
-bbMaxCount       = input.int   (     10   , title = 'Max Breaker Blocks'             ,   group = 'Breaker Blocks', minval = 1, maxval = 50          )
+bbMaxCount       = input.int   (      2   , title = 'Max Breaker Blocks'             ,   group = 'Breaker Blocks', minval = 1, maxval = 50          )
 cBBplusA         = input.color (color.new(#0cc11a, 90), title = 'Bullish BB'        ,   group = 'Breaker Blocks', inline = 'bb1'                   )
 cBB_minA         = input.color (color.new(#ff1100, 90), title = 'Bearish BB'        ,   group = 'Breaker Blocks', inline = 'bb1'                   )
 
