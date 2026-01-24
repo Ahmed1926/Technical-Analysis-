@@ -668,15 +668,15 @@ if showSMT
 
     if lastBullishDivergence
         if showBullSMTLine
-            smtBuLine := line.new(lowPerBar, low[bar_index - lowPerBar], lowLastBar, low[bar_index - lowLastBar], color=color.black, width=1, style=line.style_dashed)
+            smtBuLine := line.new(lowPerBar, lowPerPrice, lowLastBar, lowLastPrice, color=color.black, width=1, style=line.style_dashed)
         if showBullSMTLabel
-            smtBuLabel := label.new(lowLastBar, low[bar_index - lowLastBar], '+SMT', color=color.green, textcolor=color.white, size=size.tiny, style=label.style_label_up)
+            smtBuLabel := label.new(lowLastBar, lowLastPrice, '+SMT', color=color.green, textcolor=color.white, size=size.tiny, style=label.style_label_up)
 
     if lastBearishDivergence
         if showBearSMTLine
-            smtBeLine := line.new(highPerBar, high[bar_index - highPerBar], highLastBar, high[bar_index - highLastBar], color=color.black, width=1, style=line.style_dashed)
+            smtBeLine := line.new(highPerBar, highPerPrice, highLastBar, highLastPrice, color=color.black, width=1, style=line.style_dashed)
         if showBearSMTLabel
-            smtBeLabel := label.new(highLastBar, high[bar_index - highLastBar], '-SMT', color=color.red, textcolor=color.white, size=size.tiny, style=label.style_label_down)
+            smtBeLabel := label.new(highLastBar, highLastPrice, '-SMT', color=color.red, textcolor=color.white, size=size.tiny, style=label.style_label_down)
 
 
 //-----------------------------------------------------------------------------}
