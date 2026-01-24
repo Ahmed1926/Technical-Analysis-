@@ -22,8 +22,10 @@ showDonchian = input.bool(false, "Show Donchian Channels", group=turtleGroup)
 donchian20Period = input.int(20, "Donchian 20 Period", minval=5, maxval=100, group=turtleGroup)
 donchian55Period = input.int(55, "Donchian 55 Period", minval=20, maxval=200, group=turtleGroup)
 showATR = input.bool(false, "Show ATR Stops", group=turtleGroup)
+showATRIndicator = input.bool(true, "Show ATR in Lower Panel", group=turtleGroup, tooltip="Display ATR value in separate window below chart")
 atrPeriod = input.int(14, "ATR Period", minval=5, maxval=50, group=turtleGroup)
 atrMultiplier = input.float(2.0, "ATR Stop Multiplier", minval=0.5, maxval=5.0, step=0.5, group=turtleGroup)
+atrColor = input.color(color.new(color.orange, 0), "ATR Color", group=turtleGroup)
 
 donchian20Color = input.color(color.new(color.blue, 80), "Donchian 20 Color", group=turtleGroup, inline="d20")
 donchian55Color = input.color(color.new(color.purple, 80), "Donchian 55 Color", group=turtleGroup, inline="d55")
@@ -32,6 +34,7 @@ donchian55Color = input.color(color.new(color.purple, 80), "Donchian 55 Color", 
 crtGroup = "Candle Range Theory (CRT)"
 showCRT = input.bool(false, "Show CRT A-M-D Pattern", group=crtGroup)
 crtLookback = input.int(50, "CRT Pattern Lookback", minval=20, maxval=200, group=crtGroup)
+maxCRTPatterns = input.int(5, "Max CRT Patterns", minval=1, maxval=20, group=crtGroup)
 accumulationColor = input.color(color.new(color.yellow, 70), "Accumulation Box", group=crtGroup, inline="crt1")
 manipulationColor = input.color(color.new(color.orange, 70), "Manipulation Box", group=crtGroup, inline="crt2")
 distributionColor = input.color(color.new(color.green, 70), "Distribution (Bullish)", group=crtGroup, inline="crt3")
@@ -46,6 +49,8 @@ tbsGroup = "Turtle Soup (TBS)"
 showTBS = input.bool(false, "Show Turtle Soup Signals", group=tbsGroup)
 tbsSwingPeriod = input.int(20, "Swing High/Low Period", minval=5, maxval=100, group=tbsGroup)
 tbsMaxWickPercent = input.float(30, "Max Wick % for TBS", minval=10, maxval=80, step=5, group=tbsGroup, tooltip="Max percentage of candle that can be wick for valid TBS")
+requireCHOCH = input.bool(true, "Require CHOCH Confirmation", group=tbsGroup, tooltip="Require Change of Character confirmation before showing TBS signal")
+maxTBSSignals = input.int(5, "Max TBS Signals", minval=1, maxval=20, group=tbsGroup)
 bullTBSColor = input.color(color.new(color.lime, 0), "Bullish TBS", group=tbsGroup, inline="tbs1")
 bearTBSColor = input.color(color.new(color.red, 0), "Bearish TBS", group=tbsGroup, inline="tbs2")
 
@@ -122,7 +127,7 @@ show_h4_labels  = input.bool(true, "Show H4 Labels", group = g_TF_LABEL)
 show_daily_labels = input.bool(true, "Show Daily Labels", group = g_TF_LABEL)
 show_weekly_labels = input.bool(true, "Show Weekly Labels", group = g_TF_LABEL)
 show_monthly_labels = input.bool(true, "Show Monthly Labels", group = g_TF_LABEL)
-max_labels      = input.int(50, "Maximum number of labels to show", minval=1, maxval=500, group = g_TF_LABEL)
+max_labels      = input.int(5, "Maximum number of labels per timeframe", minval=1, maxval=20, group = g_TF_LABEL, tooltip="Limits labels shown per timeframe to reduce chart clutter")
 show_eol_labels = input.bool(true, "Show End-of-Line Labels", group = g_TF_LABEL)
 eol_label_offset = input.int(5, "End-of-Line Label Offset", minval=1, maxval=50, group = g_TF_LABEL)
 
@@ -141,6 +146,7 @@ smtGroup = "SMT Divergence"
 showSMT = input.bool(true, "Show SMT Divergence", group=smtGroup)
 smtSymbol = input.symbol('XAUUSD', 'Second Symbol', group=smtGroup)
 smtPivotPeriod = input.int(2, "Divergence Fractal Periods", minval=1, group=smtGroup)
+maxSMTSignals = input.int(5, "Max SMT Signals", minval=1, maxval=20, group=smtGroup)
 showBullSMTLine = input.bool(true, 'Show SMT Divergence Line from Bottom', group=smtGroup)
 showBullSMTLabel = input.bool(true, 'Show SMT Divergence Label from Bottom', group=smtGroup)
 showBearSMTLine = input.bool(true, 'Show SMT Divergence Line from Top', group=smtGroup)
@@ -229,9 +235,82 @@ if showTBS
     wickPercentBear = (close - low) / (high - low) * 100
     bearishTBS := high > swingHigh[1] and close < swingHigh[1] and wickPercentBear < tbsMaxWickPercent
 
-// Plot TBS signals
-plotshape(showTBS and bullishTBS, "Bullish TBS", shape.triangleup, location.belowbar, bullTBSColor, size=size.small, text="TBS")
-plotshape(showTBS and bearishTBS, "Bearish TBS", shape.triangledown, location.abovebar, bearTBSColor, size=size.small, text="TBS")
+// Track TBS signals count
+var int bullTBSCount = 0
+var int bearTBSCount = 0
+
+// Only plot if under max limit and CHOCH confirmed (if required)
+showBullishTBS = showTBS and bullishTBS and bullTBSCount < maxTBSSignals
+showBearishTBS = showTBS and bearishTBS and bearTBSCount < maxTBSSignals
+
+if showBullishTBS
+    bullTBSCount += 1
+if showBearishTBS
+    bearTBSCount += 1
+
+// Reset counters periodically (every 500 bars)
+if bar_index % 500 == 0
+    bullTBSCount := 0
+    bearTBSCount := 0
+
+// Note: TBS signals will be plotted after CHOCH confirmation
+
+//-----------------------------------------------------------------------------}
+//CHOCH (Change of Character) Detection
+//-----------------------------------------------------------------------------{
+
+// CHOCH detection using market structure shifts
+var int marketStructure = 0  // 1 = bullish, -1 = bearish, 0 = neutral
+var float lastSwingHigh = na
+var float lastSwingLow = na
+var int lastHighBar = na
+var int lastLowBar = na
+
+// Detect swing highs and lows using pivots
+pivotHigh = ta.pivothigh(high, tbsSwingPeriod, tbsSwingPeriod)
+pivotLow = ta.pivotlow(low, tbsSwingPeriod, tbsSwingPeriod)
+
+// Update swing levels
+if not na(pivotHigh)
+    lastSwingHigh := pivotHigh
+    lastHighBar := bar_index - tbsSwingPeriod
+
+if not na(pivotLow)
+    lastSwingLow := pivotLow
+    lastLowBar := bar_index - tbsSwingPeriod
+
+// Detect CHOCH
+bullishCHOCH = false
+bearishCHOCH = false
+
+// Bullish CHOCH: Break above previous swing high in bearish structure
+if not na(lastSwingHigh) and marketStructure <= 0
+    if close > lastSwingHigh
+        bullishCHOCH := true
+        marketStructure := 1
+
+// Bearish CHOCH: Break below previous swing low in bullish structure
+if not na(lastSwingLow) and marketStructure >= 0
+    if close < lastSwingLow
+        bearishCHOCH := true
+        marketStructure := -1
+
+// Final TBS signal confirmation
+var bool confirmedBullishTBS = false
+var bool confirmedBearishTBS = false
+
+if requireCHOCH
+    // Require CHOCH confirmation for TBS
+    confirmedBullishTBS := showBullishTBS and (bullishCHOCH or marketStructure == 1)
+    confirmedBearishTBS := showBearishTBS and (bearishCHOCH or marketStructure == -1)
+else
+    // No CHOCH required
+    confirmedBullishTBS := showBullishTBS
+    confirmedBearishTBS := showBearishTBS
+
+// Plot TBS signals with CHOCH confirmation
+plotshape(confirmedBullishTBS, "Bullish TBS", shape.triangleup, location.belowbar, bullTBSColor, size=size.small, text="TBS")
+plotshape(confirmedBearishTBS, "Bearish TBS", shape.triangledown, location.abovebar, bearTBSColor, size=size.small, text="TBS")
 
 //-----------------------------------------------------------------------------}
 //CRT (Candle Range Theory) - A-M-D Pattern Detection
@@ -252,6 +331,9 @@ var float accumulationHigh = 0.0
 var float accumulationLow = 0.0
 var int manipulationBar = 0
 var bool isBullishCRT = false
+
+// CRT Pattern counter
+var int crtPatternCount = 0
 
 if showCRT
     // Detect Accumulation: Look for ranging candle (small body relative to previous candles)
@@ -312,12 +394,17 @@ if showCRT
 //CRT Visual Elements - Boxes and TP Levels
 //-----------------------------------------------------------------------------{
 
-if showCRT and crtState >= 1
+// Reset CRT counter periodically (every 500 bars)
+if bar_index % 500 == 0
+    crtPatternCount := 0
+
+if showCRT and crtState >= 1 and crtPatternCount < maxCRTPatterns
     // Draw accumulation box
     if crtState == 1 and na(accumulationBox)
         accumulationBox := box.new(accumulationBar, accumulationHigh, bar_index + 10, accumulationLow,
                                    border_color=accumulationColor, bgcolor=accumulationColor,
                                    text="A", text_color=color.white, text_size=size.small)
+        crtPatternCount += 1
 
     // Update accumulation box
     if not na(accumulationBox) and crtState >= 1
@@ -670,23 +757,32 @@ if showSMT
     else
         false
 
-    // Draw lines and labels
+    // Draw lines and labels with counter limit
     var line smtBuLine = na
     var label smtBuLabel = na
     var line smtBeLine = na
     var label smtBeLabel = na
+    var int smtBullCount = 0
+    var int smtBearCount = 0
 
-    if lastBullishDivergence
+    // Reset SMT counters periodically (every 500 bars)
+    if bar_index % 500 == 0
+        smtBullCount := 0
+        smtBearCount := 0
+
+    if lastBullishDivergence and smtBullCount < maxSMTSignals
         if showBullSMTLine
             smtBuLine := line.new(lowPerBar, lowPerPrice, lowLastBar, lowLastPrice, color=color.black, width=1, style=line.style_dashed)
         if showBullSMTLabel
             smtBuLabel := label.new(lowLastBar, lowLastPrice, '+SMT', color=color.green, textcolor=color.white, size=size.tiny, style=label.style_label_up)
+        smtBullCount += 1
 
-    if lastBearishDivergence
+    if lastBearishDivergence and smtBearCount < maxSMTSignals
         if showBearSMTLine
             smtBeLine := line.new(highPerBar, highPerPrice, highLastBar, highLastPrice, color=color.black, width=1, style=line.style_dashed)
         if showBearSMTLabel
             smtBeLabel := label.new(highLastBar, highLastPrice, '-SMT', color=color.red, textcolor=color.white, size=size.tiny, style=label.style_label_down)
+        smtBearCount += 1
 
 
 //-----------------------------------------------------------------------------}
@@ -725,6 +821,16 @@ if showNoWickLines and (bullishNoBottomWick or bearishNoTopWick)
     // Add label to display "Compensation" next to the line
     if showNoWickLabels
         noWickLabel := label.new(x=bar_index + barsToRight + 1, y=open, text="Compensation", style=label.style_label_left, color=noWickLineColor, size=size.small)
+
+//-----------------------------------------------------------------------------}
+//ATR Display
+//-----------------------------------------------------------------------------{
+
+// Create a table to display ATR value in the lower right corner
+var table atrTable = table.new(position.bottom_right, 1, 1, bgcolor=color.new(color.black, 80), frame_color=color.new(atrColor, 0), frame_width=2, border_width=1)
+
+if showATRIndicator and barstate.islast
+    table.cell(atrTable, 0, 0, "ATR(" + str.tostring(atrPeriod) + "): " + str.tostring(atrValue, format.mintick), text_color=atrColor, text_size=size.normal)
 
 //-----------------------------------------------------------------------------}
 //Alerts
