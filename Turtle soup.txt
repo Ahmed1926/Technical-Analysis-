@@ -1,0 +1,64 @@
+// This Pine Script® code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © mickes
+
+//@version=6
+indicator("Turtle soup", overlay = true, max_boxes_count = 500, max_labels_count = 500, max_lines_count = 500)
+
+import mickes/PriceAction/3
+
+_marketStructureLeftPivotLength = input.int(5, "Pivot", inline = "pivot", group = "Market structure")
+_marketStructureRightPivotLength = input.int(5, "", inline = "pivot", group = "Market structure")
+_marketStructureShowPivots = input.bool(true, "", tooltip = "Set the left and right pivot lengths for the market structure that decides the trend.", inline = "pivot", group = "Market structure")
+
+_pivotLeftLength = input.int(1, "Pivot", inline = "liquidityturtlesoup", group = "Turtle soup liquidity")
+_pivotRightLength = input.int(1, "", tooltip = "Set the pivot lengths (right and left) that can be  target for a turtle soup.", inline = "liquidityturtlesoup", group = "Turtle soup liquidity")
+_lookback = input.int(5, "Lookback", tooltip = "Set how many pivots back that can be a target for a turtle soup.", group = "Turtle soup liquidity")
+_timeframe = input.timeframe("", "Timeframe", tooltip = "The higher timeframe for pivots that can be a target for a turtle soup.", group = "Turtle soup liquidity")
+_color = input.color(color.new(color.orange, 70), "Color", group = "Turtle soup liquidity")
+_confirmation = input.bool(true, "Confirmation", tooltip = "• ENABLED\nThe turtle soup needs to be followed by a change of character (CHoCH) in the opposite direction.\n\n• DISABLED\nAll potential turtle soups will be shown, even the once with the 'wrong' direction (this is due to how higher timeframe values (pivots in this case) are fethed in Pine Script and that the trend can change during that fetching).", group = "Turtle soup liquidity")
+
+_marketStructureFontSize = input.int(7, "Market structure font size", group = "Display")
+
+_alertFrequency = input.string(alert.freq_once_per_bar_close, "Frequency", [alert.freq_all, alert.freq_once_per_bar, alert.freq_once_per_bar_close], group = "Alerts")
+
+_screenerKeep = input.int(5, "Keep", tooltip = "The indicator will use 'plot()' to be able to screen for turtle soups on the 'Pine Screener' by Tradingview. You can use tge Pine Screener for finding turtle soup setups on entire.\n\nNOTE: Screening is only possible if 'Confirmation' is enabled.", group = "Screening")
+
+Confirm(PriceAction.TurtleSoups turtleSoupsContext, int trend, PriceAction.TurtleSoupSettings settings, int previousStructureBreakBarIndex, PriceAction.Screener screener) =>
+    switch trend
+        -1 => PriceAction.Confirm(turtleSoupsContext.Bearish, turtleSoupsContext, settings, previousStructureBreakBarIndex, screener)
+        1 => PriceAction.Confirm(turtleSoupsContext.Bullish, turtleSoupsContext, settings, previousStructureBreakBarIndex, screener)
+TurtleSoup(PriceAction.TurtleSoups turtleSoupsContext, PriceAction.TurtleSoupSettings settings) =>
+    if barstate.isconfirmed // only if the bar is closed
+        PriceAction.VisualizeTurtleSoups(turtleSoupsContext.Highs, turtleSoupsContext.Bearish, turtleSoupsContext, settings)
+        PriceAction.VisualizeTurtleSoups(turtleSoupsContext.Lows, turtleSoupsContext.Bullish, turtleSoupsContext, settings)
+
+var priceAction = PriceAction.PriceAction.new(Swing = PriceAction.Structure.new(_marketStructureLeftPivotLength, _marketStructureRightPivotLength, PriceAction.Type.Swing, 0, -1, false, "", color(na), array.new<box>(), array.new<box>(), array.new<PriceAction.StructureBreak>(), array.new<PriceAction.Pivot>(), _marketStructureFontSize, false, false, false))
+PriceAction.Pivot(priceAction.Swing)
+if _marketStructureShowPivots
+    PriceAction.PivotLabels(priceAction.Swing)
+
+var settings = PriceAction.TurtleSoupSettings.new(_pivotLeftLength, _pivotRightLength, _lookback, _confirmation, _color, _screenerKeep, _alertFrequency)
+var turtleSoupsContext = PriceAction.TurtleSoups.new(array.new<PriceAction.Pivot>(), array.new<PriceAction.Pivot>(), array.new<PriceAction.TurtleSoup>(), array.new<PriceAction.TurtleSoup>(), array.new<string>())
+var screener = PriceAction.Screener.new()
+
+TurtleSoup(turtleSoupsContext, settings)
+
+changeOfCharacter = false
+breakOfStructure = false
+if barstate.isconfirmed
+    changeOfCharacter := PriceAction.ChangeOfCharacter(priceAction.Swing)
+    breakOfStructure := PriceAction.BreakOfStructure(priceAction.Swing)
+if settings.Confirmation
+    var int previousStructureBreakBarIndex = na
+    if changeOfCharacter and not na(previousStructureBreakBarIndex)
+        Confirm(turtleSoupsContext, priceAction.Swing.Trend, settings, previousStructureBreakBarIndex, screener)
+    if changeOfCharacter or breakOfStructure
+        previousStructureBreakBarIndex := bar_index
+
+[pivotHigh, pivotLow] = request.security(syminfo.tickerid, _timeframe, PriceAction.GetPivots(settings))
+PriceAction.SetBarIndices(pivotHigh, pivotLow)
+PriceAction.SetPivots(turtleSoupsContext, settings, pivotHigh, pivotLow)
+
+PriceAction.Alert(turtleSoupsContext, settings)
+
+plot(bar_index <= screener.TurtleSoupUntilBarIndex ? 1 : 0, "Turtle soup", display = display.none, precision = 0)
