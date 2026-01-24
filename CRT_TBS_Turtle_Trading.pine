@@ -3,7 +3,7 @@
 // Combining CRT, TBS, Turtle Trading, Multi-Timeframe Intrabar, VWAP, and SMT Divergence
 
 //@version=5
-indicator("Complete ICT Trading System", overlay=true, max_boxes_count=500, max_labels_count=500, max_lines_count=500, max_bars_back=5000)
+indicator("Complete ICT Trading System", overlay=true, max_boxes_count=500, max_labels_count=500, max_lines_count=500, max_bars_back=5000, dynamic_requests=true)
 
 // Explicitly set max_bars_back for key variables
 max_bars_back(time, 5000)
