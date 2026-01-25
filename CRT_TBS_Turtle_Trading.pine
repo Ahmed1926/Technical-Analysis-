@@ -18,10 +18,10 @@ max_bars_back(open, 5000)
 
 // === CLASSIC TURTLE TRADING SETTINGS ===
 turtleGroup = "Classic Turtle Trading"
-showDonchian = input.bool(false, "Show Donchian Channels", group=turtleGroup)
+showDonchian = input.bool(true, "Show Donchian Channels", group=turtleGroup)
 donchian20Period = input.int(20, "Donchian 20 Period", minval=5, maxval=100, group=turtleGroup)
 donchian55Period = input.int(55, "Donchian 55 Period", minval=20, maxval=200, group=turtleGroup)
-showATR = input.bool(false, "Show ATR Stops", group=turtleGroup)
+showATR = input.bool(true, "Show ATR Stops", group=turtleGroup)
 showATRIndicator = input.bool(true, "Show ATR in Lower Panel", group=turtleGroup, tooltip="Display ATR value in separate window below chart")
 atrPeriod = input.int(14, "ATR Period", minval=5, maxval=50, group=turtleGroup)
 atrMultiplier = input.float(2.0, "ATR Stop Multiplier", minval=0.5, maxval=5.0, step=0.5, group=turtleGroup)
@@ -32,7 +32,7 @@ donchian55Color = input.color(color.new(color.purple, 80), "Donchian 55 Color", 
 
 // === CRT (CANDLE RANGE THEORY) SETTINGS ===
 crtGroup = "Candle Range Theory (CRT)"
-showCRT = input.bool(false, "Show CRT A-M-D Pattern", group=crtGroup)
+showCRT = input.bool(true, "Show CRT A-M-D Pattern", group=crtGroup)
 crtLookback = input.int(50, "CRT Pattern Lookback", minval=20, maxval=200, group=crtGroup)
 maxCRTPatterns = input.int(5, "Max CRT Patterns", minval=1, maxval=20, group=crtGroup)
 accumulationColor = input.color(color.new(color.yellow, 70), "Accumulation Box", group=crtGroup, inline="crt1")
@@ -148,16 +148,16 @@ smtSymbol = input.symbol('XAUUSD', 'Second Symbol', group=smtGroup)
 smtPivotPeriod = input.int(2, "Divergence Fractal Periods", minval=1, group=smtGroup)
 maxSMTSignals = input.int(5, "Max SMT Signals", minval=1, maxval=20, group=smtGroup)
 showBullSMTLine = input.bool(true, 'Show SMT Divergence Line from Bottom', group=smtGroup)
-showBullSMTLabel = input.bool(true, 'Show SMT Divergence Label from Bottom', group=smtGroup)
+showBullSMTLabel = input.bool(false, 'Show SMT Divergence Label from Bottom', group=smtGroup)
 showBearSMTLine = input.bool(true, 'Show SMT Divergence Line from Top', group=smtGroup)
-showBearSMTLabel = input.bool(true, 'Show SMT Divergence Label from Top', group=smtGroup)
+showBearSMTLabel = input.bool(false, 'Show SMT Divergence Label from Top', group=smtGroup)
 
 // === NO WICK CANDLESTICK SETTINGS ===
 noWickGroup = "No Wick Candlestick"
 showNoWick = input.bool(true, "Show No Wick Candlesticks", group=noWickGroup)
 showNoWickShapes = input.bool(true, "Show Triangles", group=noWickGroup)
-showNoWickLines = input.bool(true, "Show Compensation Lines", group=noWickGroup)
-showNoWickLabels = input.bool(true, "Show Compensation Labels", group=noWickGroup)
+showNoWickLines = input.bool(false, "Show Compensation Lines", group=noWickGroup)
+showNoWickLabels = input.bool(false, "Show Compensation Labels", group=noWickGroup)
 noWickBullColor = input.color(color.new(color.green, 0), "Bullish No Wick", group=noWickGroup, inline="nw1")
 noWickBearColor = input.color(color.new(color.red, 0), "Bearish No Wick", group=noWickGroup, inline="nw1")
 noWickLineColor = input.color(color.new(#FFAE35, 5), "Compensation Line", group=noWickGroup)
