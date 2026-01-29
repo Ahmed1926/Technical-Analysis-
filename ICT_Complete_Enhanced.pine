@@ -420,7 +420,7 @@ method display(ob id, css, break_css, str)=>
              bx_ln_lb.new(
                box(na)
              , line.new(id.loc,   y  , id.loc  + (tf_msec * 50),    y
-             , xloc    = xloc.bar_time, color=css, width=2)
+             , xloc    = xloc.bar_time, color=css, width=2, extend=extend.right)
              , label.new(              id.loc  + (tf_msec * 50),    y
              , text  = str == 'bl' ? '+OB' : '-OB'
              , xloc  = xloc.bar_time
@@ -760,9 +760,6 @@ if showAsian and timeframe.period != "D" and timeframe.period != "W" and timefra
     atrh = line.new(AsianFromDate, asian_rth_high, AsianToDate, asian_rth_high, xloc=xloc.bar_time, color=line_color, style=line.style_solid, width = boxLineWidth)
     line.delete(atrh[1])
 
-    atrm = line.new(AsianFromDate, asian_rth_mid, AsianToDate, asian_rth_mid, xloc=xloc.bar_time, color=line_color, style=line.style_dotted, width = sessionLineWidth)
-    line.delete(atrm[1])
-
     asianStartBox = line.new(AsianFromDate, asian_rth_high, AsianFromDate, asian_rth_low, extend=extend.none, xloc=xloc.bar_time, color=line_color, style=line.style_solid, width=boxLineWidth)
     line.delete(asianStartBox[1])
 
@@ -807,9 +804,6 @@ if showLondon and timeframe.period != "D" and timeframe.period != "W" and timefr
     ltrh = line.new(LondonFromDate, london_rth_high, LondonToDate, london_rth_high, xloc=xloc.bar_time, color=lline_color, style=line.style_solid, width = lboxLineWidth)
     line.delete(ltrh[1])
 
-    ltrm = line.new(LondonFromDate, london_rth_mid, LondonToDate, london_rth_mid, xloc=xloc.bar_time, color=lline_color, style=line.style_dotted, width = lsessionLineWidth)
-    line.delete(ltrm[1])
-
     londonStartBox = line.new(LondonFromDate, london_rth_high, LondonFromDate, london_rth_low, extend=extend.none, xloc=xloc.bar_time, color=lline_color, style=line.style_solid, width=lboxLineWidth)
     line.delete(londonStartBox[1])
 
@@ -853,9 +847,6 @@ if showNY and timeframe.period != "D" and timeframe.period != "W" and timeframe.
 
     ntrh = line.new(NyFromDate, ny_rth_high, NyToDate, ny_rth_high, xloc=xloc.bar_time, color=nline_color, style=line.style_solid, width = nboxLineWidth)
     line.delete(ntrh[1])
-
-    ntrm = line.new(NyFromDate, ny_rth_mid, NyToDate, ny_rth_mid, xloc=xloc.bar_time, color=nline_color, style=line.style_dotted, width = nsessionLineWidth)
-    line.delete(ntrm[1])
 
     nyStartBox = line.new(NyFromDate, ny_rth_high, NyFromDate, ny_rth_low, extend=extend.none, xloc=xloc.bar_time, color=nline_color, style=line.style_solid, width=nboxLineWidth)
     line.delete(nyStartBox[1])
