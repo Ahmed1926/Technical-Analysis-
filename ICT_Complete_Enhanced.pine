@@ -66,19 +66,19 @@ showLabels = input.bool  (          false, title = 'Show Historical Polarity Cha
 //-----------------------------------------------------------------------------{
 showBB           = input.bool  (  true    , title = 'Show Breaker Blocks'            ,   group = 'Breaker Blocks'                                  )
 breakerShowBoxes = input.bool  (  true    , title = 'Show as Boxes'                  ,   group = 'Breaker Blocks'                                  )
-bbMaxCount       = input.int   (      5   , title = 'Max Breaker Blocks'             ,   group = 'Breaker Blocks', minval = 1, maxval = 50          )
-cBBplusA         = input.color (color.new(#0cc11a, 90), title = 'Bullish BB'        ,   group = 'Breaker Blocks', inline = 'bb1'                   )
-cBB_minA         = input.color (color.new(#ff1100, 90), title = 'Bearish BB'        ,   group = 'Breaker Blocks', inline = 'bb1'                   )
+bbMaxCount       = input.int   (      3   , title = 'Max Breaker Blocks'             ,   group = 'Breaker Blocks', minval = 1, maxval = 50          )
+cBBplusA         = input.color (color.new(#0cc11a, 95), title = 'Bullish BB'        ,   group = 'Breaker Blocks', inline = 'bb1'                   )
+cBB_minA         = input.color (color.new(#ff1100, 95), title = 'Bearish BB'        ,   group = 'Breaker Blocks', inline = 'bb1'                   )
 
 //-----------------------------------------------------------------------------}
 //Propulsion Blocks Settings (LuxAlgo)
 //-----------------------------------------------------------------------------{
 showPB       = input.bool  (  true  , title = 'Show Propulsion Blocks'                 ,   group = 'Propulsion Blocks'                                )
-pbShowMean   = input.bool  (  true  , title = 'Show Mean Line'                         ,   group = 'Propulsion Blocks'                                )
-pbMaxCount   = input.int   (     5  , title = 'Max Propulsion Blocks'                  ,   group = 'Propulsion Blocks', minval = 1, maxval = 50       )
+pbShowMean   = input.bool  (  false , title = 'Show Mean Line'                         ,   group = 'Propulsion Blocks'                                )
+pbMaxCount   = input.int   (     3  , title = 'Max Propulsion Blocks'                  ,   group = 'Propulsion Blocks', minval = 1, maxval = 50       )
 pbSwingLen   = input.int   (     3  , title = 'Swing Detection Length'                 ,   group = 'Propulsion Blocks', minval = 1                    )
-cPBplus      = input.color (color.new(#089981, 90), title = 'Bullish PB'              ,   group = 'Propulsion Blocks', inline = 'pb1'                )
-cPBminus     = input.color (color.new(#F23645, 90), title = 'Bearish PB'              ,   group = 'Propulsion Blocks', inline = 'pb1'                )
+cPBplus      = input.color (color.new(#089981, 95), title = 'Bullish PB'              ,   group = 'Propulsion Blocks', inline = 'pb1'                )
+cPBminus     = input.color (color.new(#F23645, 95), title = 'Bearish PB'              ,   group = 'Propulsion Blocks', inline = 'pb1'                )
 
 //-----------------------------------------------------------------------------}
 //Mitigation Blocks Settings
@@ -86,8 +86,8 @@ cPBminus     = input.color (color.new(#F23645, 90), title = 'Bearish PB'        
 showMB      = input.bool  (  true  , title = 'Show Mitigation Blocks'                  ,   group = 'Mitigation Blocks'                                )
 mbShowBull  = input.bool  (  true  , title = 'Show Bullish MB'                         ,   group = 'Mitigation Blocks'                                )
 mbShowBear  = input.bool  (  true  , title = 'Show Bearish MB'                         ,   group = 'Mitigation Blocks'                                )
-mbBullColor = input.color (color.new(color.green, 85), title = 'Bullish MB'          ,   group = 'Mitigation Blocks', inline = 'mb1'                )
-mbBearColor = input.color (color.new(color.red, 85), title = 'Bearish MB'            ,   group = 'Mitigation Blocks', inline = 'mb1'                )
+mbBullColor = input.color (color.new(color.green, 95), title = 'Bullish MB'          ,   group = 'Mitigation Blocks', inline = 'mb1'                )
+mbBearColor = input.color (color.new(color.red, 95), title = 'Bearish MB'            ,   group = 'Mitigation Blocks', inline = 'mb1'                )
 mbLookback  = input.int   (     3  , title = 'Max Visible MBs'                         ,   group = 'Mitigation Blocks'                                )
 
 //-----------------------------------------------------------------------------}
@@ -770,13 +770,8 @@ if showAsian and timeframe.period != "D" and timeframe.period != "W" and timefra
     line.delete(asianEndBox[1])
 
 if showAsian and not inAsianSession and inAsianSession[1] and timeframe.period != "D" and timeframe.period != "W" and timeframe.period != "M"
-    asian_range = ((asian_rth_high[1]-asian_rth_low[1])/(syminfo.mintick))/10
     labelTime = time - (time-time[1])*12
-
-    if showADR and (timenow - time) < (one_day * daily_adr)
-        label.new(labelTime, asian_rth_low[1], "A = " + str.tostring(asian_range) + "\nADR = " + str.tostring(to_pips(day_adr)), xloc.bar_time, yloc.price, color.new(color.black,100), label.style_label_up, line_color, size.normal)
-    else
-        label.new(labelTime, asian_rth_low[1], "A = " + str.tostring(asian_range), xloc.bar_time, yloc.price, color.new(color.black,100), label.style_label_up, line_color, size.normal)
+    label.new(labelTime, asian_rth_low[1], "A", xloc.bar_time, yloc.price, color.new(color.black,100), label.style_label_up, line_color, size.small)
 
 // London Session Range Construction
 var float london_hi = 10e-10
@@ -822,9 +817,8 @@ if showLondon and timeframe.period != "D" and timeframe.period != "W" and timefr
     line.delete(londonEndBox[1])
 
 if show_london_session_rng and showLondon and not inLondonSession and inLondonSession[1] and timeframe.period != "D" and timeframe.period != "W" and timeframe.period != "M"
-    london_range = ((london_rth_high[1]-london_rth_low[1])/(syminfo.mintick))/10
     londonLabelTime = time - (time-time[1])*12
-    label.new(londonLabelTime, london_rth_low[1], "L = " + str.tostring(london_range), xloc.bar_time, yloc.price, color.new(color.black,100), label.style_label_up, lline_color, size.normal)
+    label.new(londonLabelTime, london_rth_low[1], "L", xloc.bar_time, yloc.price, color.new(color.black,100), label.style_label_up, lline_color, size.small)
 
 // New York Session Range Construction
 var float ny_hi = 10e-10
@@ -870,9 +864,8 @@ if showNY and timeframe.period != "D" and timeframe.period != "W" and timeframe.
     line.delete(nyEndBox[1])
 
 if show_ny_session_rng and showNY and not inNySession and inNySession[1] and timeframe.period != "D" and timeframe.period != "W" and timeframe.period != "M"
-    ny_range = ((ny_rth_high[1]-ny_rth_low[1])/(syminfo.mintick))/10
     nyLabelTime = time - (time-time[1])*12
-    label.new(nyLabelTime, ny_rth_low[1], "N = " + str.tostring(ny_range), xloc.bar_time, yloc.price, color.new(color.black,100), label.style_label_up, nline_color, size.normal)
+    label.new(nyLabelTime, ny_rth_low[1], "NY", xloc.bar_time, yloc.price, color.new(color.black,100), label.style_label_up, nline_color, size.small)
 
 // Previous Day High/Low
 getData(r, s) => request.security(syminfo.tickerid, r, s, barmerge.gaps_off, barmerge.lookahead_on)
