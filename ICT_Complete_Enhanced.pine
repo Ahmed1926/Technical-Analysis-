@@ -1708,12 +1708,14 @@ plotshape(sDispl ? per       ?
      , title     = 'Displacement UP'
      , style     = shape.labelup
      , color     = color.lime
-     , location  = location.belowbar)
+     , location  = location.belowbar
+     , display   = display.none)
 plotshape(sDispl ? per       ?
      L_bodyDN    ? high : na : na : na
      , title     = 'Displacement DN'
      , style     = shape.labeldown
      , color     = color.red
-     , location  = location.abovebar)
+     , location  = location.abovebar
+     , display   = display.none)
 
 //-----------------------------------------------------------------------------}
