@@ -43,7 +43,7 @@ bxBack     = 10
 //Volume Imbalance Settings
 //-----------------------------------------------------------------------------{
 sVimbl     = input.bool  (           true         , title = ''                       ,   group = 'Volume Imbalance' , inline = 'VI'                                    )
-visVim     = input.int   (             2          , title = "   # Visible VI's  "+sp1,   group = 'Volume Imbalance' , inline = 'VI'      , minval = 2, maxval = 100    )
+visVim     = input.int   (             5          , title = "   # Visible VI's  "+sp1,   group = 'Volume Imbalance' , inline = 'VI'      , minval = 2, maxval = 100    )
 cVimbl     = input.color (color.new(#06b2d0,  0), title = ''                       ,   group = 'Volume Imbalance' , inline = 'VI'                                    )
 
 //-----------------------------------------------------------------------------}
@@ -107,7 +107,7 @@ shwFVG     = input.bool  (           true         , title = 'Show FVGs'         
 i_BPR      = input.bool  (           false        , title = 'Balance Price Range'    ,   group = 'Fair Value Gaps'                                                     )
 i_FVG      = input.string(           'FVG'        , title = o                        ,   group = 'Fair Value Gaps'  , options=['FVG', 'IFVG']
            ,                                                                           tooltip = 'Fair Value Gaps\nor\nImplied Fair Value Gaps'                        )
-visBxs     = input.int   (             2          , title = '# Visible FVG\'s'       ,   group = 'Fair Value Gaps'
+visBxs     = input.int   (             5          , title = '# Visible FVG\'s'       ,   group = 'Fair Value Gaps'
            ,                                       minval = 1         , maxval = 20  , tooltip = 'In the same direction'                                               )
 
 cFVGbl     = input.color (color.new(#00e676, 10), title = 'Bullish FVG  '          ,   group = 'Fair Value Gaps'  , inline = 'FVGbl'                                 )
