@@ -143,7 +143,7 @@ user_ssth               = input.string("20", title="Asian Start Hour (EST)", gro
 user_sstm               = input.string("00", title="Asian Start Minute (EST)", group='Trading Sessions', options=["00", "15", "30", "45"])
 user_esth               = input.string("02", title="Asian End Hour (EST)", group='Trading Sessions', options=["00", "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23"])
 user_estm               = input.string("00", title="Asian End Minute (EST)", group='Trading Sessions', options=["00", "15", "30", "45"])
-user_box_line_color     = input.string("blue", title="Asian Range Border Color", group='Trading Sessions', options=["aqua", "black", "blue", "fuchsia", "gray", "green", "lime", "maroon", "navy", "olive", "orange", "purple", "red", "silver", "teal", "white", "yellow"])
+user_box_line_color     = input.string("orange", title="Asian Range Border Color", group='Trading Sessions', options=["aqua", "black", "blue", "fuchsia", "gray", "green", "lime", "maroon", "navy", "olive", "orange", "purple", "red", "silver", "teal", "white", "yellow"])
 boxLineWidth            = input.int(1, title="Asian Box Line Width", group='Trading Sessions', minval=0, maxval=10)
 sessionLineWidth        = input.int(2, title="Asian Session Line Width", group='Trading Sessions', minval=0, maxval=20)
 
@@ -154,7 +154,7 @@ london_ssth             = input.string("03", title="London Start Hour (EST)", gr
 london_sstm             = input.string("00", title="London Start Minute (EST)", group='Trading Sessions', options=["00", "15", "30", "45"])
 london_esth             = input.string("07", title="London End Hour (EST)", group='Trading Sessions', options=["00", "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23"])
 london_estm             = input.string("00", title="London End Minute (EST)", group='Trading Sessions', options=["00", "15", "30", "45"])
-luser_box_line_color    = input.string("teal", title="London Range Border Color", group='Trading Sessions', options=["aqua", "black", "blue", "fuchsia", "gray", "green", "lime", "maroon", "navy", "olive", "orange", "purple", "red", "silver", "teal", "white", "yellow"])
+luser_box_line_color    = input.string("blue", title="London Range Border Color", group='Trading Sessions', options=["aqua", "black", "blue", "fuchsia", "gray", "green", "lime", "maroon", "navy", "olive", "orange", "purple", "red", "silver", "teal", "white", "yellow"])
 lboxLineWidth           = input.int(1, title="London Box Line Width", group='Trading Sessions', minval=0, maxval=10)
 lsessionLineWidth       = input.int(2, title="London Session Line Width", group='Trading Sessions', minval=0, maxval=20)
 
@@ -165,7 +165,7 @@ ny_ssth                 = input.string("08", title="New York Start Hour (EST)", 
 ny_sstm                 = input.string("00", title="New York Start Minute (EST)", group='Trading Sessions', options=["00", "15", "30", "45"])
 ny_esth                 = input.string("12", title="New York End Hour (EST)", group='Trading Sessions', options=["00", "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23"])
 ny_estm                 = input.string("00", title="New York End Minute (EST)", group='Trading Sessions', options=["00", "15", "30", "45"])
-nuser_box_line_color    = input.string("silver", title="New York Range Border Color", group='Trading Sessions', options=["aqua", "black", "blue", "fuchsia", "gray", "green", "lime", "maroon", "navy", "olive", "orange", "purple", "red", "silver", "teal", "white", "yellow"])
+nuser_box_line_color    = input.string("black", title="New York Range Border Color", group='Trading Sessions', options=["aqua", "black", "blue", "fuchsia", "gray", "green", "lime", "maroon", "navy", "olive", "orange", "purple", "red", "silver", "teal", "white", "yellow"])
 nboxLineWidth           = input.int(1, title="New York Box Line Width", group='Trading Sessions', minval=0, maxval=10)
 nsessionLineWidth       = input.int(2, title="New York Session Line Width", group='Trading Sessions', minval=0, maxval=20)
 
