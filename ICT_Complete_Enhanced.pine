@@ -22,7 +22,7 @@ i_mode     = input.string(         'Present'      , title = 'Mode'              
 //Market Structure Shift Settings
 //-----------------------------------------------------------------------------{
 showMS     = input.bool  (           true         , title = ''                       ,   group = 'Market Structures', inline = 'MS'                                    )
-len        = input.int   (             5          , title = '     Length   ' +sp2    ,   group = 'Market Structures', inline = 'MS'       , minval = 3, maxval =  10   )
+len        = input.int   (            10          , title = '     Length   ' +sp2    ,   group = 'Market Structures', inline = 'MS'       , minval = 3, maxval =  10   )
 
 iMSS       = input.bool  (           true         , title = '       MSS'     +sp1    ,   group = 'Market Structures', inline = 'M1'                                    )
 cMSSbl     = input.color (color.new(#00e6a1,  0), title = 'bullish'                ,   group = 'Market Structures', inline = 'M1'                                    )
