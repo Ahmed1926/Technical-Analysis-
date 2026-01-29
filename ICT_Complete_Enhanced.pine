@@ -985,7 +985,7 @@ if imbalanceUP and per and shwFVG
            n -2
          ,    i_FVG == 'FVG' ? low : high[2]
          , n, i_FVG == 'FVG' ? high[2] : low
-         , bgcolor     = i_BPR ? color(na) : color.new(cFVGbl, 90)
+         , bgcolor     = i_BPR ? color(na) : color.new(cFVGbl, 70)
          , border_color= i_BPR ? color(na) : color.new(cFVGbl, 65)
          , text_color  = i_BPR ? color(na) : color.new(cFVGbl, 65)
          , text_size=size.small
@@ -1005,7 +1005,7 @@ if imbalanceDN and per and shwFVG
            n -2
          ,    i_FVG == 'FVG' ? low[2] : high
          , n, i_FVG == 'FVG' ? high   : low[2]
-         , bgcolor     = i_BPR ? color(na) : color.new(cFVGbr, 90)
+         , bgcolor     = i_BPR ? color(na) : color.new(cFVGbr, 70)
          , border_color= i_BPR ? color(na) : color.new(cFVGbr, 65)
          , text_color  = i_BPR ? color(na) : color.new(cFVGbr, 65)
          , text_size=size.small
@@ -1035,7 +1035,7 @@ if i_BPR and bFVG_UP.size() > 0 and bFVG_DN.size() > 0
             bBPR_UP.unshift(FVG.new(
              box.new(
               left, bxDNtop, right, bxUPbtm
-              , bgcolor     = i_BPR ? color.new(cFVGbl, 90) : color(na)
+              , bgcolor     = i_BPR ? color.new(cFVGbl, 70) : color(na)
               , border_color= i_BPR ? color.new(cFVGbl, 65) : color(na)
               , text_color  = i_BPR ? color.new(cFVGbl, 65) : color(na)
               , text_size=size.small
@@ -1056,7 +1056,7 @@ if i_BPR and bFVG_UP.size() > 0 and bFVG_DN.size() > 0
             bBPR_DN.unshift(FVG.new(
              box.new(
               left, bxUPtop, right, bxDNbtm
-              , bgcolor     = i_BPR ? color.new(cFVGbr, 90) : color(na)
+              , bgcolor     = i_BPR ? color.new(cFVGbr, 70) : color(na)
               , border_color= i_BPR ? color.new(cFVGbr, 65) : color(na)
               , text_color  = i_BPR ? color.new(cFVGbr, 65) : color(na)
               , text_size=size.small
