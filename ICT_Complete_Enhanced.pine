@@ -1397,6 +1397,7 @@ if showOB and per
 if showBB and a_breaker_bull.size() > 0
     for i = a_breaker_bull.size() - 1 to 0
         bb = a_breaker_bull.get(i)
+        bb.ln.set_color(color.new(color.white, 100))
         if not bb.mitigated
             if close < bb.btm
                 bb.mitigated := true
@@ -1406,6 +1407,7 @@ if showBB and a_breaker_bull.size() > 0
 if showBB and a_breaker_bear.size() > 0
     for i = a_breaker_bear.size() - 1 to 0
         bb = a_breaker_bear.get(i)
+        bb.ln.set_color(color.new(color.white, 100))
         if not bb.mitigated
             if close > bb.top
                 bb.mitigated := true
