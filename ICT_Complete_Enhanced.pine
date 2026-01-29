@@ -450,12 +450,12 @@ swings(len)=>
 set_lab(i, str) =>
     style = str == 'Bl' ? label.style_label_down : label.style_label_up
     txcol = str == 'Bl' ? color.lime : color.red
-    label.new(math.round(math.avg(aZZ.x.get(i), n + 20)), aZZ.y.get(i), text='BOS'
+    label.new(math.round(math.avg(aZZ.x.get(i), n)), aZZ.y.get(i), text='BOS'
      , style=style, color=color(na), textcolor=txcol, size=size.tiny)
 
 set_lin(i, str) =>
     color = str == 'Bl' ? color.lime : color.red
-    line.new(aZZ.x.get(i), aZZ.y.get(i), n + 20, aZZ.y.get(i), color=color, style=line.style_dotted)
+    line.new(aZZ.x.get(i), aZZ.y.get(i), n, aZZ.y.get(i), color=color, style=line.style_dotted)
 
 draw(left, col) =>
     //
@@ -595,9 +595,9 @@ draw(left, col) =>
                     MSS.lbMssBl.clear_aLabLin(), MSS.lbMssBr.clear_aLabLin()
                 //
                 MSS.l_mssBl.unshift(line.new (
-                  aZZ.x.get(iH), aZZ.y.get(iH), n + 20, aZZ.y.get(iH), color=cMSSbl))
+                  aZZ.x.get(iH), aZZ.y.get(iH), n, aZZ.y.get(iH), color=cMSSbl))
                 MSS.lbMssBl.unshift(label.new(
-                  math.round(math.avg(aZZ.x.get(iH), n + 20)), aZZ.y.get(iH), text ='MSS'
+                  math.round(math.avg(aZZ.x.get(iH), n)), aZZ.y.get(iH), text ='MSS'
                   , style=label.style_label_down, size=size.tiny, color=color(na), textcolor=cMSSbl))
             // MSS Bearish
             close < aZZ.y.get(iL) and aZZ.d.get(iL) == -1 and MSS.dir > -1 =>
@@ -609,9 +609,9 @@ draw(left, col) =>
                     MSS.lbMssBl.clear_aLabLin(), MSS.lbMssBr.clear_aLabLin()
                 //
                 MSS.l_mssBr.unshift(line.new (
-                  aZZ.x.get(iL), aZZ.y.get(iL), n + 20, aZZ.y.get(iL), color=cMSSbr))
+                  aZZ.x.get(iL), aZZ.y.get(iL), n, aZZ.y.get(iL), color=cMSSbr))
                 MSS.lbMssBr.unshift(label.new(
-                  math.round(math.avg(aZZ.x.get(iL), n + 20)), aZZ.y.get(iL), text ='MSS'
+                  math.round(math.avg(aZZ.x.get(iL), n)), aZZ.y.get(iL), text ='MSS'
                   , style=label.style_label_up  , size=size.tiny, color=color(na), textcolor=cMSSbr))
             // BOS Bullish
             MSS.dir ==  1 and close > aZZ.y.get(iH) and iBOS =>
