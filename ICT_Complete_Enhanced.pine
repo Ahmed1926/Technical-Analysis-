@@ -406,7 +406,7 @@ method display(ob id, css, break_css, str)=>
         if id.breaker
             a_bx_ln_lb.unshift(
              bx_ln_lb.new(
-               box.new(id.loc, id.top, timenow + (tf_msec * 10), id.btm, na
+               box.new(id.loc, id.top, timenow + (tf_msec * 25), id.btm, na
              , bgcolor = break_css
              , extend  = extend.none
              , xloc    = xloc.bar_time)
@@ -419,9 +419,9 @@ method display(ob id, css, break_css, str)=>
             a_bx_ln_lb.unshift(
              bx_ln_lb.new(
                box(na)
-             , line.new(id.loc,   y  , id.loc  + (tf_msec * 10),    y
+             , line.new(id.loc,   y  , id.loc  + (tf_msec * 25),    y
              , xloc    = xloc.bar_time, color=css, width=2)
-             , label.new(              id.loc  + (tf_msec * 10),    y
+             , label.new(              id.loc  + (tf_msec * 25),    y
              , text  = str == 'bl' ? '+OB' : '-OB'
              , xloc  = xloc.bar_time
              , style = s    , color = color(na)
