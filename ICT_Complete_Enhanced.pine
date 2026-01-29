@@ -51,8 +51,8 @@ cVimbl     = input.color (color.new(#06b2d0,  0), title = ''                    
 //-----------------------------------------------------------------------------{
 showOB     = input.bool  (           true         , title = 'Show Order Blocks'      ,   group = 'Order Blocks'                                                        )
 length     = input.int   (            10          , title = 'Swing Lookback'         ,   group = 'Order Blocks'                          , minval = 3                  )
-showBull   = input.int   (             3          , title = 'Show Last Bullish OB'   ,   group = 'Order Blocks'                          , minval = 0                  )
-showBear   = input.int   (             3          , title = 'Show Last Bearish OB'   ,   group = 'Order Blocks'                          , minval = 0                  )
+showBull   = input.int   (             5          , title = 'Show Last Bullish OB'   ,   group = 'Order Blocks'                          , minval = 0                  )
+showBear   = input.int   (             5          , title = 'Show Last Bearish OB'   ,   group = 'Order Blocks'                          , minval = 0                  )
 useBody    = input.bool  (           true         , title = 'Use Candle Body'        ,   group = 'Order Blocks'                                                        )
 
 bullCss    = input.color (color.new(#3e89fa, 10), title = 'Bullish OB  '           ,   group = 'Order Blocks'     , inline = 'bullcss'                               )
@@ -66,7 +66,7 @@ showLabels = input.bool  (          false, title = 'Show Historical Polarity Cha
 //-----------------------------------------------------------------------------{
 showBB           = input.bool  (  true    , title = 'Show Breaker Blocks'            ,   group = 'Breaker Blocks'                                  )
 breakerShowBoxes = input.bool  (  true    , title = 'Show as Boxes'                  ,   group = 'Breaker Blocks'                                  )
-bbMaxCount       = input.int   (      2   , title = 'Max Breaker Blocks'             ,   group = 'Breaker Blocks', minval = 1, maxval = 50          )
+bbMaxCount       = input.int   (      5   , title = 'Max Breaker Blocks'             ,   group = 'Breaker Blocks', minval = 1, maxval = 50          )
 cBBplusA         = input.color (color.new(#0cc11a, 90), title = 'Bullish BB'        ,   group = 'Breaker Blocks', inline = 'bb1'                   )
 cBB_minA         = input.color (color.new(#ff1100, 90), title = 'Bearish BB'        ,   group = 'Breaker Blocks', inline = 'bb1'                   )
 
@@ -75,7 +75,7 @@ cBB_minA         = input.color (color.new(#ff1100, 90), title = 'Bearish BB'    
 //-----------------------------------------------------------------------------{
 showPB       = input.bool  (  true  , title = 'Show Propulsion Blocks'                 ,   group = 'Propulsion Blocks'                                )
 pbShowMean   = input.bool  (  true  , title = 'Show Mean Line'                         ,   group = 'Propulsion Blocks'                                )
-pbMaxCount   = input.int   (     2  , title = 'Max Propulsion Blocks'                  ,   group = 'Propulsion Blocks', minval = 1, maxval = 50       )
+pbMaxCount   = input.int   (     5  , title = 'Max Propulsion Blocks'                  ,   group = 'Propulsion Blocks', minval = 1, maxval = 50       )
 pbSwingLen   = input.int   (     3  , title = 'Swing Detection Length'                 ,   group = 'Propulsion Blocks', minval = 1                    )
 cPBplus      = input.color (color.new(#089981, 90), title = 'Bullish PB'              ,   group = 'Propulsion Blocks', inline = 'pb1'                )
 cPBminus     = input.color (color.new(#F23645, 90), title = 'Bearish PB'              ,   group = 'Propulsion Blocks', inline = 'pb1'                )
