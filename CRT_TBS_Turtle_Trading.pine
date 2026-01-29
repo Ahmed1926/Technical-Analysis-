@@ -46,7 +46,7 @@ tp2Color = input.color(color.new(color.green, 50), "TP2 (100%)", group=crtGroup,
 
 // === TURTLE SOUP (TBS) SETTINGS ===
 tbsGroup = "Turtle Soup (TBS)"
-showTBS = input.bool(false, "Show Turtle Soup Signals", group=tbsGroup)
+showTBS = input.bool(true, "Show Turtle Soup Signals", group=tbsGroup)
 tbsSwingPeriod = input.int(20, "Swing High/Low Period", minval=5, maxval=100, group=tbsGroup)
 tbsMaxWickPercent = input.float(30, "Max Wick % for TBS", minval=10, maxval=80, step=5, group=tbsGroup, tooltip="Max percentage of candle that can be wick for valid TBS")
 requireCHOCH = input.bool(true, "Require CHOCH Confirmation", group=tbsGroup, tooltip="Require Change of Character confirmation before showing TBS signal")
@@ -56,8 +56,8 @@ bearTBSColor = input.color(color.new(color.red, 0), "Bearish TBS", group=tbsGrou
 
 // === SIGNAL SETTINGS ===
 signalGroup = "Entry/Exit Signals"
-showEntrySignals = input.bool(false, "Show Entry Signals", group=signalGroup)
-showExitSignals = input.bool(false, "Show Exit Signals", group=signalGroup)
+showEntrySignals = input.bool(true, "Show Entry Signals", group=signalGroup)
+showExitSignals = input.bool(true, "Show Exit Signals", group=signalGroup)
 combineSignals = input.bool(true, "Combine TBS + CRT Signals", group=signalGroup, tooltip="Require both TBS and CRT confirmation for entry")
 
 // === MULTI-TIMEFRAME INTRABAR SETTINGS ===
@@ -65,19 +65,19 @@ var g_TF = "Multi-Timeframe Intrabar"
 use_tf1         = input.bool(false, "30 Minutes", inline = "TF1", group = g_TF)
 tf1             = input.timeframe("30", "", inline = "TF1", group = g_TF)
 tf1_color       = input.color(color.new(#FF1493, 70), "", inline = "TF1", group = g_TF)
-use_tf1_mid     = input.bool(true, "50% Level", inline = "TF1M", group = g_TF)
+use_tf1_mid     = input.bool(false, "50% Level", inline = "TF1M", group = g_TF)
 tf1_mid_color   = input.color(color.new(#FF1493, 50), "", inline = "TF1M", group = g_TF)
 
 use_tf2         = input.bool(false, "1 Hour", inline = "TF2", group = g_TF)
 tf2             = input.timeframe("60", "", inline = "TF2", group = g_TF)
 tf2_color       = input.color(color.new(#FF4500, 70), "", inline = "TF2", group = g_TF)
-use_tf2_mid     = input.bool(true, "50% Level", inline = "TF2M", group = g_TF)
+use_tf2_mid     = input.bool(false, "50% Level", inline = "TF2M", group = g_TF)
 tf2_mid_color   = input.color(color.new(#FF4500, 50), "", inline = "TF2M", group = g_TF)
 
 use_tf3         = input.bool(false, "2 Hours", inline = "TF3", group = g_TF)
 tf3             = input.timeframe("120", "", inline = "TF3", group = g_TF)
 tf3_color       = input.color(color.new(#32CD32, 70), "", inline = "TF3", group = g_TF)
-use_tf3_mid     = input.bool(true, "50% Level", inline = "TF3M", group = g_TF)
+use_tf3_mid     = input.bool(false, "50% Level", inline = "TF3M", group = g_TF)
 tf3_mid_color   = input.color(color.new(#32CD32, 50), "", inline = "TF3M", group = g_TF)
 
 use_tf4         = input.bool(true, "4 Hours", inline = "TF4", group = g_TF)
@@ -105,7 +105,7 @@ use_tf7_mid     = input.bool(true, "50% Level", inline = "TF7M", group = g_TF)
 tf7_mid_color   = input.color(color.new(#FF69B4, 50), "", inline = "TF7M", group = g_TF)
 
 var g_TF_OPT = "MTF Options"
-minbars         = input.int(1, "Minimum Bars", group = g_TF_OPT)
+minbars         = input.int(5, "Minimum Bars", group = g_TF_OPT)
 maxbars         = input.int(250, "Maximum Bars", group = g_TF_OPT)
 hllinewidth     = input.int(2, "High/Low Line Width", group = g_TF_OPT)
 midlinewidth    = input.int(1, "Mid Line Width", group = g_TF_OPT)
@@ -127,7 +127,7 @@ show_h4_labels  = input.bool(true, "Show H4 Labels", group = g_TF_LABEL)
 show_daily_labels = input.bool(true, "Show Daily Labels", group = g_TF_LABEL)
 show_weekly_labels = input.bool(true, "Show Weekly Labels", group = g_TF_LABEL)
 show_monthly_labels = input.bool(true, "Show Monthly Labels", group = g_TF_LABEL)
-max_labels      = input.int(5, "Maximum number of labels per timeframe", minval=1, maxval=20, group = g_TF_LABEL, tooltip="Limits labels shown per timeframe to reduce chart clutter")
+max_labels      = input.int(5, "Maximum number of labels per timeframe", minval=1, maxval=100, group = g_TF_LABEL, tooltip="Limits labels shown per timeframe to reduce chart clutter")
 show_eol_labels = input.bool(true, "Show End-of-Line Labels", group = g_TF_LABEL)
 eol_label_offset = input.int(5, "End-of-Line Label Offset", minval=1, maxval=50, group = g_TF_LABEL)
 
@@ -147,16 +147,16 @@ showSMT = input.bool(true, "Show SMT Divergence", group=smtGroup)
 smtSymbol = input.symbol('XAUUSD', 'Second Symbol', group=smtGroup)
 smtPivotPeriod = input.int(2, "Divergence Fractal Periods", minval=1, group=smtGroup)
 maxSMTSignals = input.int(5, "Max SMT Signals", minval=1, maxval=20, group=smtGroup)
-showBullSMTLine = input.bool(true, 'Show SMT Divergence Line from Bottom', group=smtGroup)
+showBullSMTLine = input.bool(false, 'Show SMT Divergence Line from Bottom', group=smtGroup)
 showBullSMTLabel = input.bool(false, 'Show SMT Divergence Label from Bottom', group=smtGroup)
 showBearSMTLine = input.bool(true, 'Show SMT Divergence Line from Top', group=smtGroup)
-showBearSMTLabel = input.bool(false, 'Show SMT Divergence Label from Top', group=smtGroup)
+showBearSMTLabel = input.bool(true, 'Show SMT Divergence Label from Top', group=smtGroup)
 
 // === NO WICK CANDLESTICK SETTINGS ===
 noWickGroup = "No Wick Candlestick"
 showNoWick = input.bool(true, "Show No Wick Candlesticks", group=noWickGroup)
-showNoWickShapes = input.bool(true, "Show Triangles", group=noWickGroup)
-showNoWickLines = input.bool(false, "Show Compensation Lines", group=noWickGroup)
+showNoWickShapes = input.bool(false, "Show Triangles", group=noWickGroup)
+showNoWickLines = input.bool(true, "Show Compensation Lines", group=noWickGroup)
 showNoWickLabels = input.bool(false, "Show Compensation Labels", group=noWickGroup)
 noWickBullColor = input.color(color.new(color.green, 0), "Bullish No Wick", group=noWickGroup, inline="nw1")
 noWickBearColor = input.color(color.new(color.red, 0), "Bearish No Wick", group=noWickGroup, inline="nw1")
