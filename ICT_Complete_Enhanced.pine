@@ -179,8 +179,8 @@ lastWeeklyHiLoColor     = input.string("orange", title="Last Week Line Color", g
 supportLastWeekLineWidth= input.int(1, title="Last Week Line Width", group='Trading Sessions', minval=0, maxval=10)
 
 // ADR
-showADR                 = input.bool(true, title="Show Average Daily Range", group='Trading Sessions')
-is_forex_pips           = input.bool(true, title="Display average range as forex pips?", group='Trading Sessions')
+showADR                 = input.bool(false, title="Show Average Daily Range", group='Trading Sessions')
+is_forex_pips           = input.bool(false, title="Display average range as forex pips?", group='Trading Sessions')
 daily_adr_user          = input.int(1, title="Show ADR for x days", group='Trading Sessions', minval=0)
 daily_adr_length        = input.int(21, title="ADR Length parameter (Days - default 3 weeks, 21 days)", group='Trading Sessions', minval=0)
 
@@ -1708,14 +1708,12 @@ plotshape(sDispl ? per       ?
      , title     = 'Displacement UP'
      , style     = shape.labelup
      , color     = color.lime
-     , location  = location.belowbar
-     , display   = display.none)
+     , location  = location.belowbar)
 plotshape(sDispl ? per       ?
      L_bodyDN    ? high : na : na : na
      , title     = 'Displacement DN'
      , style     = shape.labeldown
      , color     = color.red
-     , location  = location.abovebar
-     , display   = display.none)
+     , location  = location.abovebar)
 
 //-----------------------------------------------------------------------------}
