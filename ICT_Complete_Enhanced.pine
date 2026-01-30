@@ -885,23 +885,23 @@ SupportToDate = timestamp(year, month, dayofmonth + isSupportEndTimeAlignment, e
 if showPreviousDayHiLo and timeframe.period != "D" and timeframe.period != "W" and timeframe.period != "M"
     yesterdayHighLine = line.new(SupportFromDate, pdh, SupportToDate, pdh, xloc=xloc.bar_time, extend=extend.right, color=support_line_color, style=line.style_dashed, width = supportLineWidth)
     line.delete(yesterdayHighLine[1])
-    dailyHighLabel = label.new(math.round(math.avg(SupportFromDate, SupportToDate)), pdh, "Daily High", xloc=xloc.bar_time, yloc=yloc.price, color=color.new(color.black, 100), style=label.style_label_center, textcolor=color.black, size=size.large)
+    dailyHighLabel = label.new(math.round(math.avg(SupportFromDate, SupportToDate)), pdh, "𝗗𝗮𝗶𝗹𝘆 𝗛𝗶𝗴𝗵", xloc=xloc.bar_time, yloc=yloc.price, color=color.new(color.black, 100), style=label.style_label_center, textcolor=color.black, size=size.normal)
     label.delete(dailyHighLabel[1])
 
     yesterdayLowLine = line.new(SupportFromDate, pdl, SupportToDate, pdl, xloc=xloc.bar_time, extend=extend.right, color=support_line_color, style=line.style_dashed, width = supportLineWidth)
     line.delete(yesterdayLowLine[1])
-    dailyLowLabel = label.new(math.round(math.avg(SupportFromDate, SupportToDate)), pdl, "Daily Low", xloc=xloc.bar_time, yloc=yloc.price, color=color.new(color.black, 100), style=label.style_label_center, textcolor=color.black, size=size.large)
+    dailyLowLabel = label.new(math.round(math.avg(SupportFromDate, SupportToDate)), pdl, "𝗗𝗮𝗶𝗹𝘆 𝗟𝗼𝘄", xloc=xloc.bar_time, yloc=yloc.price, color=color.new(color.black, 100), style=label.style_label_center, textcolor=color.black, size=size.normal)
     label.delete(dailyLowLabel[1])
 
 if showLastWeeklyHiLo and timeframe.period != "D" and timeframe.period != "W" and timeframe.period != "M"
     weekLastHighLine = line.new(SupportFromDate, lwh, SupportToDate, lwh, xloc=xloc.bar_time, extend=extend.right, color=support_last_week_line_color, style=line.style_dashed, width = supportLastWeekLineWidth)
     line.delete(weekLastHighLine[1])
-    weeklyHighLabel = label.new(math.round(math.avg(SupportFromDate, SupportToDate)), lwh, "Weekly High", xloc=xloc.bar_time, yloc=yloc.price, color=color.new(color.black, 100), style=label.style_label_center, textcolor=color.black, size=size.large)
+    weeklyHighLabel = label.new(math.round(math.avg(SupportFromDate, SupportToDate)), lwh, "𝗪𝗲𝗲𝗸𝗹𝘆 𝗛𝗶𝗴𝗵", xloc=xloc.bar_time, yloc=yloc.price, color=color.new(color.black, 100), style=label.style_label_center, textcolor=color.black, size=size.normal)
     label.delete(weeklyHighLabel[1])
 
     weekLastLowLine = line.new(SupportFromDate, lwl, SupportToDate, lwl, xloc=xloc.bar_time, extend=extend.right, color=support_last_week_line_color, style=line.style_dashed, width = supportLastWeekLineWidth)
     line.delete(weekLastLowLine[1])
-    weeklyLowLabel = label.new(math.round(math.avg(SupportFromDate, SupportToDate)), lwl, "Weekly Low", xloc=xloc.bar_time, yloc=yloc.price, color=color.new(color.black, 100), style=label.style_label_center, textcolor=color.black, size=size.large)
+    weeklyLowLabel = label.new(math.round(math.avg(SupportFromDate, SupportToDate)), lwl, "𝗪𝗲𝗲𝗸𝗹𝘆 𝗟𝗼𝘄", xloc=xloc.bar_time, yloc=yloc.price, color=color.new(color.black, 100), style=label.style_label_center, textcolor=color.black, size=size.normal)
     label.delete(weeklyLowLabel[1])
 
 //Pivotpoints
