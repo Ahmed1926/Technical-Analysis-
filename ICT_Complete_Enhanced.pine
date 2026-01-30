@@ -305,11 +305,10 @@ type breaker
 
 // Propulsion Block Type
 type propulsion
-    float price
-    float mean
+    float top
+    float btm
     int   start
-    line  pline
-    line  mline
+    box   bx
     label lb
     int   direction
 
@@ -1074,8 +1073,8 @@ if isFVGup and per
           box.new(n -2, low, n, high[2]
          , bgcolor     = i_BPR ? color(na) : cFVGbl
          , border_color= i_BPR ? color(na) : color.new(cFVGbl, 65)
-         , text_color  = i_BPR ? color(na) : color.new(cFVGbl, 65)
-         , text_size=size.small, text='FVG')
+         , text_color  = color.black
+         , text_size=size.small, text='FVG', text_halign=text.align_center, text_valign=text.align_center)
          , true))
         bFVG_UP.pop().box.delete()
 
@@ -1089,8 +1088,8 @@ if isIFVGup and per
           box.new(n -2, high[2], n, low
          , bgcolor     = i_BPR ? color(na) : cIFVGbl
          , border_color= i_BPR ? color(na) : color.new(cIFVGbl, 65)
-         , text_color  = i_BPR ? color(na) : color.new(cIFVGbl, 65)
-         , text_size=size.small, text='IFVG')
+         , text_color  = color.black
+         , text_size=size.small, text='IFVG', text_halign=text.align_center, text_valign=text.align_center)
          , true))
         bFVG_UP.pop().box.delete()
 
@@ -1104,8 +1103,8 @@ if isFVGdn and per
          box.new(n -2, low[2], n, high
          , bgcolor     = i_BPR ? color(na) : cFVGbr
          , border_color= i_BPR ? color(na) : color.new(cFVGbr, 65)
-         , text_color  = i_BPR ? color(na) : color.new(cFVGbr, 65)
-         , text_size=size.small, text='FVG')
+         , text_color  = color.black
+         , text_size=size.small, text='FVG', text_halign=text.align_center, text_valign=text.align_center)
          , true))
         bFVG_DN.pop().box.delete()
 
@@ -1119,8 +1118,8 @@ if isIFVGdn and per
          box.new(n -2, high, n, low[2]
          , bgcolor     = i_BPR ? color(na) : cIFVGbr
          , border_color= i_BPR ? color(na) : color.new(cIFVGbr, 65)
-         , text_color  = i_BPR ? color(na) : color.new(cIFVGbr, 65)
-         , text_size=size.small, text='IFVG')
+         , text_color  = color.black
+         , text_size=size.small, text='IFVG', text_halign=text.align_center, text_valign=text.align_center)
          , true))
         bFVG_DN.pop().box.delete()
 
@@ -1400,11 +1399,11 @@ if showOB and per
                     ob_breach_low_bull.set(i, math.min(breach_low, low))
                     ob_breach_high_bull.set(i, math.max(breach_high, high))
 
-            // Propulsion: Price bounces from OB (with swing detection)
+            // Propulsion: Price bounces from OB (with swing detection) - box with centered label
             if is_breaching and close > element.top and showPB and pbNearSwingLow
                 breach_high := ob_breach_high_bull.get(i)
-                // Create Propulsion Block
-                newPB = propulsion.new(breach_high, math.avg(breach_high, element.top), time_to_bar_index(element.loc), line.new(time_to_bar_index(element.loc), breach_high, n + 50, breach_high, extend=extend.right, color=cPBplus, width=2, style=line.style_solid), line.new(time_to_bar_index(element.loc), math.avg(breach_high, element.top), n + 50, math.avg(breach_high, element.top), extend=extend.right, color=color.new(cPBplus, 50), width=1, style=line.style_dotted), label.new(time_to_bar_index(element.loc), breach_high, 'PB+', color=color.new(color.white, 100), textcolor=color.green, size=size.small, style=label.style_label_upper_right), 1)
+                // Create Propulsion Block as box
+                newPB = propulsion.new(breach_high, element.top, time_to_bar_index(element.loc), box.new(time_to_bar_index(element.loc), breach_high, n + 50, element.top, bgcolor=cPBplus, border_color=color.new(cPBplus, 50), extend=extend.right, text="PB+", text_color=color.black, text_size=size.small, text_halign=text.align_center, text_valign=text.align_center), label.new(time_to_bar_index(element.loc), breach_high, '', color=color.new(color.white, 100), textcolor=color.green, size=size.small, style=label.style_label_upper_right), 1)
                 a_propulsion_bull.unshift(newPB)
                 // Remove OB (replaced by propulsion)
                 bullish_ob.remove(i)
@@ -1416,9 +1415,9 @@ if showOB and per
             // Breaker: Price breaks below OB (with swing detection)
             if not element.breaker
                 if math.min(close, open) < element.btm and showBB and bbNearSwingHigh
-                    // Create Breaker Block
+                    // Create Breaker Block with centered label
                     bbCenter = math.avg(element.top, element.btm)
-                    newBB = breaker.new(element.top, element.btm, bbCenter, time_to_bar_index(element.loc), breakerShowBoxes ? box.new(time_to_bar_index(element.loc), element.top, n + 50, element.btm, border_color=cBB_minA, bgcolor=cBB_minA, extend=extend.right, xloc=xloc.bar_index) : box(na), line.new(time_to_bar_index(element.loc), bbCenter, n + 50, bbCenter, extend=extend.right, color=color.new(cBB_minA, 0), width=2, style=line.style_dashed), label.new(n, bbCenter, 'BB-', color=color.new(color.white, 100), textcolor=color.red, size=size.small, style=label.style_label_lower_right), false, -1)
+                    newBB = breaker.new(element.top, element.btm, bbCenter, time_to_bar_index(element.loc), breakerShowBoxes ? box.new(time_to_bar_index(element.loc), element.top, n + 50, element.btm, border_color=cBB_minA, bgcolor=cBB_minA, extend=extend.right, xloc=xloc.bar_index, text="BB-", text_color=color.black, text_size=size.small, text_halign=text.align_center, text_valign=text.align_center) : box(na), line.new(time_to_bar_index(element.loc), bbCenter, n + 50, bbCenter, extend=extend.right, color=color.new(cBB_minA, 0), width=2, style=line.style_dashed), label.new(n, bbCenter, '', color=color.new(color.white, 100), textcolor=color.red, size=size.small, style=label.style_label_lower_right), false, -1)
                     a_breaker_bear.unshift(newBB)
                     // Remove OB
                     bullish_ob.remove(i)
@@ -1479,10 +1478,10 @@ if showOB and per
                     ob_breach_low_bear.set(i, math.min(breach_low, low))
                     ob_breach_high_bear.set(i, math.max(breach_high, high))
 
-            // Propulsion (with swing detection)
+            // Propulsion (with swing detection) - box with centered label
             if is_breaching and close < element.btm and showPB and pbNearSwingHigh
                 breach_low := ob_breach_low_bear.get(i)
-                newPB = propulsion.new(breach_low, math.avg(breach_low, element.btm), time_to_bar_index(element.loc), line.new(time_to_bar_index(element.loc), breach_low, n + 50, breach_low, extend=extend.right, color=cPBminus, width=2, style=line.style_solid), line.new(time_to_bar_index(element.loc), math.avg(breach_low, element.btm), n + 50, math.avg(breach_low, element.btm), extend=extend.right, color=color.new(cPBminus, 50), width=1, style=line.style_dotted), label.new(time_to_bar_index(element.loc), breach_low, 'PB-', color=color.new(color.white, 100), textcolor=color.red, size=size.small, style=label.style_label_lower_right), -1)
+                newPB = propulsion.new(element.btm, breach_low, time_to_bar_index(element.loc), box.new(time_to_bar_index(element.loc), element.btm, n + 50, breach_low, bgcolor=cPBminus, border_color=color.new(cPBminus, 50), extend=extend.right, text="PB-", text_color=color.black, text_size=size.small, text_halign=text.align_center, text_valign=text.align_center), label.new(time_to_bar_index(element.loc), breach_low, '', color=color.new(color.white, 100), textcolor=color.red, size=size.small, style=label.style_label_lower_right), -1)
                 a_propulsion_bear.unshift(newPB)
                 bearish_ob.remove(i)
                 ob_breaching_bear.remove(i)
@@ -1490,11 +1489,11 @@ if showOB and per
                 ob_breach_high_bear.remove(i)
                 continue
 
-            // Breaker (with swing detection)
+            // Breaker (with swing detection) - centered label
             if not element.breaker
                 if math.max(close, open) > element.top and showBB and bbNearSwingLow
                     bbCenter = math.avg(element.top, element.btm)
-                    newBB = breaker.new(element.top, element.btm, bbCenter, time_to_bar_index(element.loc), breakerShowBoxes ? box.new(time_to_bar_index(element.loc), element.top, n + 50, element.btm, border_color=cBBplusA, bgcolor=cBBplusA, extend=extend.right, xloc=xloc.bar_index) : box(na), line.new(time_to_bar_index(element.loc), bbCenter, n + 50, bbCenter, extend=extend.right, color=color.new(cBBplusA, 0), width=2, style=line.style_dashed), label.new(n, bbCenter, 'BB+', color=color.new(color.white, 100), textcolor=color.green, size=size.small, style=label.style_label_upper_right), false, 1)
+                    newBB = breaker.new(element.top, element.btm, bbCenter, time_to_bar_index(element.loc), breakerShowBoxes ? box.new(time_to_bar_index(element.loc), element.top, n + 50, element.btm, border_color=cBBplusA, bgcolor=cBBplusA, extend=extend.right, xloc=xloc.bar_index, text="BB+", text_color=color.black, text_size=size.small, text_halign=text.align_center, text_valign=text.align_center) : box(na), line.new(time_to_bar_index(element.loc), bbCenter, n + 50, bbCenter, extend=extend.right, color=color.new(cBBplusA, 0), width=2, style=line.style_dashed), label.new(n, bbCenter, '', color=color.new(color.white, 100), textcolor=color.green, size=size.small, style=label.style_label_upper_right), false, 1)
                     a_breaker_bull.unshift(newBB)
                     bearish_ob.remove(i)
                     ob_breaching_bear.remove(i)
@@ -1563,22 +1562,16 @@ if a_breaker_bear.size() > bbMaxCount
 if showPB and a_propulsion_bull.size() > 0
     for i = a_propulsion_bull.size() - 1 to 0
         pb = a_propulsion_bull.get(i)
-        if not pbShowMean
-            pb.mline.set_color(color.new(color.white, 100))
-        if close < pb.price
-            pb.pline.delete()
-            pb.mline.delete()
+        if close < pb.btm
+            pb.bx.delete()
             pb.lb.delete()
             a_propulsion_bull.remove(i)
 
 if showPB and a_propulsion_bear.size() > 0
     for i = a_propulsion_bear.size() - 1 to 0
         pb = a_propulsion_bear.get(i)
-        if not pbShowMean
-            pb.mline.set_color(color.new(color.white, 100))
-        if close > pb.price
-            pb.pline.delete()
-            pb.mline.delete()
+        if close > pb.top
+            pb.bx.delete()
             pb.lb.delete()
             a_propulsion_bear.remove(i)
 
@@ -1586,15 +1579,13 @@ if showPB and a_propulsion_bear.size() > 0
 if a_propulsion_bull.size() > pbMaxCount
     for i = 0 to a_propulsion_bull.size() - pbMaxCount - 1
         old = a_propulsion_bull.pop()
-        old.pline.delete()
-        old.mline.delete()
+        old.bx.delete()
         old.lb.delete()
 
 if a_propulsion_bear.size() > pbMaxCount
     for i = 0 to a_propulsion_bear.size() - pbMaxCount - 1
         old = a_propulsion_bear.pop()
-        old.pline.delete()
-        old.mline.delete()
+        old.bx.delete()
         old.lb.delete()
 
 //-----------------------------------------------------------------------------}
@@ -1612,7 +1603,7 @@ if showMB and mbShowBull
     strongBullCandle = close[1] > open[1] and (close[1] - open[1]) > (high[1] - low[1]) * 0.5
     bullishMB = strongBullCandle and low <= low[1] and close > low[1] and isNearSwingLow
     if bullishMB
-        newMB = mitblock.new(high[1], low[1], n - 1, box.new(n - 1, high[1], n + 20, low[1], bgcolor=mbBullColor, border_color=color.new(color.green, 100)), label.new(n + 20, low[1], 'MB+', style=label.style_label_upper_right, color=color.new(color.white, 100), textcolor=color.green, size=size.tiny))
+        newMB = mitblock.new(high[1], low[1], n - 1, box.new(n - 1, high[1], n + 20, low[1], bgcolor=mbBullColor, border_color=color.new(color.green, 100), text="MB+", text_color=color.black, text_size=size.small, text_halign=text.align_center, text_valign=text.align_center), label.new(n + 20, low[1], '', style=label.style_label_upper_right, color=color.new(color.white, 100), textcolor=color.green, size=size.tiny))
         a_mitblock_bull.unshift(newMB)
 
 if showMB and mbShowBear
@@ -1621,7 +1612,7 @@ if showMB and mbShowBear
     strongBearCandle = close[1] < open[1] and (open[1] - close[1]) > (high[1] - low[1]) * 0.5
     bearishMB = strongBearCandle and high >= high[1] and close < high[1] and isNearSwingHigh
     if bearishMB
-        newMB = mitblock.new(high[1], low[1], n - 1, box.new(n - 1, high[1], n + 20, low[1], bgcolor=mbBearColor, border_color=color.new(color.red, 100)), label.new(n + 20, high[1], 'MB-', style=label.style_label_lower_right, color=color.new(color.white, 100), textcolor=color.red, size=size.tiny))
+        newMB = mitblock.new(high[1], low[1], n - 1, box.new(n - 1, high[1], n + 20, low[1], bgcolor=mbBearColor, border_color=color.new(color.red, 100), text="MB-", text_color=color.black, text_size=size.small, text_halign=text.align_center, text_valign=text.align_center), label.new(n + 20, high[1], '', style=label.style_label_lower_right, color=color.new(color.white, 100), textcolor=color.red, size=size.tiny))
         a_mitblock_bear.unshift(newMB)
 
 // Cleanup old mitigation blocks
