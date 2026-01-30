@@ -106,16 +106,19 @@ cLIQ_S     = input.color (color.new(#1ce4fa,  0), title = 'Sellside Liquidity'  
 //FVG Settings
 //-----------------------------------------------------------------------------{
 shwFVG     = input.bool  (           true         , title = 'Show FVGs'              ,   group = 'Fair Value Gaps'                                                     )
+shwIFVG    = input.bool  (           true         , title = 'Show IFVGs'             ,   group = 'Fair Value Gaps'                                                     )
 i_BPR      = input.bool  (           false        , title = 'Balance Price Range'    ,   group = 'Fair Value Gaps'                                                     )
-i_FVG      = input.string(           'FVG'        , title = o                        ,   group = 'Fair Value Gaps'  , options=['FVG', 'IFVG']
-           ,                                                                           tooltip = 'Fair Value Gaps\nor\nImplied Fair Value Gaps'                        )
 visBxs     = input.int   (             5          , title = '# Visible FVG\'s'       ,   group = 'Fair Value Gaps'
            ,                                       minval = 1         , maxval = 20  , tooltip = 'In the same direction'                                               )
+fvgSwingLen = input.int  (             5          , title = 'Swing Detection Length' ,   group = 'Fair Value Gaps', minval = 1, maxval = 20                            )
+fvgMinBars  = input.int  (             3          , title = 'Min Bars Since Swing'   ,   group = 'Fair Value Gaps', minval = 1, maxval = 20                            )
 
-cFVGbl     = input.color (color.new(#00e676, 10), title = 'Bullish FVG  '          ,   group = 'Fair Value Gaps'  , inline = 'FVGbl'                                 )
+cFVGbl     = input.color (color.new(#00e676, 70), title = 'Bullish FVG  '          ,   group = 'Fair Value Gaps'  , inline = 'FVGbl'                                 )
 cFVGblBR   = input.color (color.new(#808000,  0), title = 'Break'                  ,   group = 'Fair Value Gaps'  , inline = 'FVGbl'                                 )
-cFVGbr     = input.color (color.new(#ff5252, 10), title = 'Bearish FVG '           ,   group = 'Fair Value Gaps'  , inline = 'FVGbr'                                 )
+cFVGbr     = input.color (color.new(#ff5252, 70), title = 'Bearish FVG '           ,   group = 'Fair Value Gaps'  , inline = 'FVGbr'                                 )
 cFVGbrBR   = input.color (color.new(#FF0000,  0), title = 'Break'                  ,   group = 'Fair Value Gaps'  , inline = 'FVGbr'                                 )
+cIFVGbl    = input.color (color.new(#00e676, 85), title = 'Bullish IFVG '          ,   group = 'Fair Value Gaps'  , inline = 'IFVGbl'                                )
+cIFVGbr    = input.color (color.new(#ff5252, 85), title = 'Bearish IFVG'           ,   group = 'Fair Value Gaps'  , inline = 'IFVGbl'                                )
 
 //-----------------------------------------------------------------------------}
 //NWOG/NDOG Settings
@@ -919,9 +922,28 @@ bsIs_bodyDN = ta.barssince(    L_bodyDN)
 lwst        = math.min(lPh [bsNOTbodyUP[1]], low[bsNOTbodyUP[1]])
 hgst        = math.max(high[bsNOTbodyDN[1]], lPl[bsNOTbodyDN[1]])
 
-//Imbalance
-imbalanceUP = L_bodyUP[1] and (i_FVG == 'FVG' ? low  > high[2] : low  < high[2])
-imbalanceDN = L_bodyDN[1] and (i_FVG == 'FVG' ? high < low [2] : high > low [2])
+//Imbalance with swing detection
+fvgSwingHigh = ta.pivothigh(high, fvgSwingLen, fvgSwingLen)
+fvgSwingLow = ta.pivotlow(low, fvgSwingLen, fvgSwingLen)
+fvgBarsSinceSwingHigh = ta.barssince(not na(fvgSwingHigh))
+fvgBarsSinceSwingLow = ta.barssince(not na(fvgSwingLow))
+fvgNearSwingLow = fvgBarsSinceSwingLow <= fvgMinBars * 3
+fvgNearSwingHigh = fvgBarsSinceSwingHigh <= fvgMinBars * 3
+
+// FVG detection (gap up = bullish, gap down = bearish)
+fvgUP = L_bodyUP[1] and low > high[2] and fvgNearSwingLow
+fvgDN = L_bodyDN[1] and high < low[2] and fvgNearSwingHigh
+
+// IFVG detection (inverse - price retraces into gap)
+ifvgUP = L_bodyUP[1] and low < high[2] and fvgNearSwingLow
+ifvgDN = L_bodyDN[1] and high > low[2] and fvgNearSwingHigh
+
+imbalanceUP = (shwFVG and fvgUP) or (shwIFVG and ifvgUP)
+imbalanceDN = (shwFVG and fvgDN) or (shwIFVG and ifvgDN)
+isFVGup = shwFVG and fvgUP
+isFVGdn = shwFVG and fvgDN
+isIFVGup = shwIFVG and ifvgUP
+isIFVGdn = shwIFVG and ifvgDN
 
 //Volume Imbalance
 vImb_Bl     = open > close[1] and high[1] > low  and close > close[1] and open > open[1] and high[1] < mn
@@ -961,44 +983,64 @@ if barstate.isfirst
             bBPR_UP.unshift(FVG.new(box(na), false))
             bBPR_DN.unshift(FVG.new(box(na), false))
 
-if imbalanceUP and per and shwFVG
-    if imbalanceUP[1]
+// Bullish FVG
+if isFVGup and per
+    if isFVGup[1]
         bFVG_UP.get(0).box.set_lefttop    (n -2, low    )
         bFVG_UP.get(0).box.set_rightbottom(n +8, high[2])
     else
         bFVG_UP.unshift(FVG.new(
-          box.new(
-           n -2
-         ,    i_FVG == 'FVG' ? low : high[2]
-         , n, i_FVG == 'FVG' ? high[2] : low
-         , bgcolor     = i_BPR ? color(na) : color.new(cFVGbl, 70)
+          box.new(n -2, low, n, high[2]
+         , bgcolor     = i_BPR ? color(na) : cFVGbl
          , border_color= i_BPR ? color(na) : color.new(cFVGbl, 65)
          , text_color  = i_BPR ? color(na) : color.new(cFVGbl, 65)
-         , text_size=size.small
-         , text=i_FVG
-         )
-         , true)
-         )
+         , text_size=size.small, text='FVG')
+         , true))
         bFVG_UP.pop().box.delete()
 
-if imbalanceDN and per and shwFVG
-    if imbalanceDN[1]
+// Bullish IFVG
+if isIFVGup and per
+    if isIFVGup[1]
+        bFVG_UP.get(0).box.set_lefttop    (n -2, high[2])
+        bFVG_UP.get(0).box.set_rightbottom(n +8, low)
+    else
+        bFVG_UP.unshift(FVG.new(
+          box.new(n -2, high[2], n, low
+         , bgcolor     = i_BPR ? color(na) : cIFVGbl
+         , border_color= i_BPR ? color(na) : color.new(cIFVGbl, 65)
+         , text_color  = i_BPR ? color(na) : color.new(cIFVGbl, 65)
+         , text_size=size.small, text='IFVG')
+         , true))
+        bFVG_UP.pop().box.delete()
+
+// Bearish FVG
+if isFVGdn and per
+    if isFVGdn[1]
         bFVG_DN.get(0).box.set_lefttop    (n -2, low[2])
-        bFVG_DN.get(0).box.set_rightbottom(n +8, high  )
+        bFVG_DN.get(0).box.set_rightbottom(n +8, high)
     else
         bFVG_DN.unshift(FVG.new(
-         box.new(
-           n -2
-         ,    i_FVG == 'FVG' ? low[2] : high
-         , n, i_FVG == 'FVG' ? high   : low[2]
-         , bgcolor     = i_BPR ? color(na) : color.new(cFVGbr, 70)
+         box.new(n -2, low[2], n, high
+         , bgcolor     = i_BPR ? color(na) : cFVGbr
          , border_color= i_BPR ? color(na) : color.new(cFVGbr, 65)
          , text_color  = i_BPR ? color(na) : color.new(cFVGbr, 65)
-         , text_size=size.small
-         , text=i_FVG
-         )
-         , true)
-         )
+         , text_size=size.small, text='FVG')
+         , true))
+        bFVG_DN.pop().box.delete()
+
+// Bearish IFVG
+if isIFVGdn and per
+    if isIFVGdn[1]
+        bFVG_DN.get(0).box.set_lefttop    (n -2, high)
+        bFVG_DN.get(0).box.set_rightbottom(n +8, low[2])
+    else
+        bFVG_DN.unshift(FVG.new(
+         box.new(n -2, high, n, low[2]
+         , bgcolor     = i_BPR ? color(na) : cIFVGbr
+         , border_color= i_BPR ? color(na) : color.new(cIFVGbr, 65)
+         , text_color  = i_BPR ? color(na) : color.new(cIFVGbr, 65)
+         , text_size=size.small, text='IFVG')
+         , true))
         bFVG_DN.pop().box.delete()
 
 //Balance Price Range
