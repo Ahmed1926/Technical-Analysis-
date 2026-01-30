@@ -57,6 +57,8 @@ viMinBars  = input.int   (             3          , title = 'Min Bars Since Swin
 //-----------------------------------------------------------------------------{
 showOB     = input.bool  (           true         , title = 'Show Order Blocks'      ,   group = 'Order Blocks'                                                        )
 length     = input.int   (            10          , title = 'Swing Lookback'         ,   group = 'Order Blocks'                          , minval = 3                  )
+obSwingLen = input.int   (             5          , title = 'Swing Detection Length' ,   group = 'Order Blocks', minval = 1, maxval = 20                              )
+obMinBars  = input.int   (             3          , title = 'Min Bars Since Swing'   ,   group = 'Order Blocks', minval = 1, maxval = 20                              )
 showBull   = input.int   (             5          , title = 'Show Last Bullish OB'   ,   group = 'Order Blocks'                          , minval = 0                  )
 showBear   = input.int   (             5          , title = 'Show Last Bearish OB'   ,   group = 'Order Blocks'                          , minval = 0                  )
 useBody    = input.bool  (           true         , title = 'Use Candle Body'        ,   group = 'Order Blocks'                                                        )
@@ -84,7 +86,8 @@ cBB_minA         = input.color (color.new(#ff1100, 90), title = 'Bearish BB'    
 showPB       = input.bool  (  true  , title = 'Show Propulsion Blocks'                 ,   group = 'Propulsion Blocks'                                )
 pbShowMean   = input.bool  (  false , title = 'Show Mean Line'                         ,   group = 'Propulsion Blocks'                                )
 pbMaxCount   = input.int   (     3  , title = 'Max Propulsion Blocks'                  ,   group = 'Propulsion Blocks', minval = 1, maxval = 50       )
-pbSwingLen   = input.int   (     3  , title = 'Swing Detection Length'                 ,   group = 'Propulsion Blocks', minval = 1                    )
+pbSwingLen   = input.int   (     5  , title = 'Swing Detection Length'                 ,   group = 'Propulsion Blocks', minval = 1, maxval = 20       )
+pbMinBars    = input.int   (     3  , title = 'Min Bars Since Swing'                   ,   group = 'Propulsion Blocks', minval = 1, maxval = 20       )
 cPBplus      = input.color (color.new(#089981, 90), title = 'Bullish PB'              ,   group = 'Propulsion Blocks', inline = 'pb1'                )
 cPBminus     = input.color (color.new(#F23645, 90), title = 'Bearish PB'              ,   group = 'Propulsion Blocks', inline = 'pb1'                )
 
@@ -980,6 +983,22 @@ msBarsSinceSwingLow = ta.barssince(not na(msSwingLow))
 msNearSwingLow = msBarsSinceSwingLow <= msMinBars * 3
 msNearSwingHigh = msBarsSinceSwingHigh <= msMinBars * 3
 
+// Order Block swing detection
+obSwingHigh = ta.pivothigh(high, obSwingLen, obSwingLen)
+obSwingLow = ta.pivotlow(low, obSwingLen, obSwingLen)
+obBarsSinceSwingHigh = ta.barssince(not na(obSwingHigh))
+obBarsSinceSwingLow = ta.barssince(not na(obSwingLow))
+obNearSwingLow = obBarsSinceSwingLow <= obMinBars * 3
+obNearSwingHigh = obBarsSinceSwingHigh <= obMinBars * 3
+
+// Propulsion Block swing detection
+pbSwingHigh = ta.pivothigh(high, pbSwingLen, pbSwingLen)
+pbSwingLow = ta.pivotlow(low, pbSwingLen, pbSwingLen)
+pbBarsSinceSwingHigh = ta.barssince(not na(pbSwingHigh))
+pbBarsSinceSwingLow = ta.barssince(not na(pbSwingLow))
+pbNearSwingLow = pbBarsSinceSwingLow <= pbMinBars * 3
+pbNearSwingHigh = pbBarsSinceSwingHigh <= pbMinBars * 3
+
 // FVG detection (gap up = bullish, gap down = bearish)
 fvgUP = L_bodyUP[1] and low > high[2] and fvgNearSwingLow
 fvgDN = L_bodyDN[1] and high < low[2] and fvgNearSwingHigh
@@ -1333,7 +1352,8 @@ if ob_breaching_bear.size() < bearish_ob.size()
         ob_breach_high_bear.push(low)
 
 if showOB and per
-    if close > top.y and not top.crossed
+    // Bullish OB (with swing detection - requires recent swing low)
+    if close > top.y and not top.crossed and obNearSwingLow
         top.crossed := true
 
         minima = max[1]
@@ -1368,8 +1388,8 @@ if showOB and per
                     ob_breach_low_bull.set(i, math.min(breach_low, low))
                     ob_breach_high_bull.set(i, math.max(breach_high, high))
 
-            // Propulsion: Price bounces from OB
-            if is_breaching and close > element.top and showPB
+            // Propulsion: Price bounces from OB (with swing detection)
+            if is_breaching and close > element.top and showPB and pbNearSwingLow
                 breach_high := ob_breach_high_bull.get(i)
                 // Create Propulsion Block
                 newPB = propulsion.new(breach_high, math.avg(breach_high, element.top), time_to_bar_index(element.loc), line.new(time_to_bar_index(element.loc), breach_high, n + 50, breach_high, extend=extend.right, color=cPBplus, width=2, style=line.style_solid), line.new(time_to_bar_index(element.loc), math.avg(breach_high, element.top), n + 50, math.avg(breach_high, element.top), extend=extend.right, color=color.new(cPBplus, 50), width=1, style=line.style_dotted), label.new(time_to_bar_index(element.loc), breach_high, 'PB+', color=color.new(color.white, 100), textcolor=color.green, size=size.small, style=label.style_label_upper_right), 1)
@@ -1412,8 +1432,8 @@ if showOB and per
           , style = label.style_label_down
           , size = size.tiny)
 
-    // Bearish OB
-    if close < btm.y and not btm.crossed
+    // Bearish OB (with swing detection - requires recent swing high)
+    if close < btm.y and not btm.crossed and obNearSwingHigh
         btm.crossed := true
 
         minima = min[1]
@@ -1447,8 +1467,8 @@ if showOB and per
                     ob_breach_low_bear.set(i, math.min(breach_low, low))
                     ob_breach_high_bear.set(i, math.max(breach_high, high))
 
-            // Propulsion
-            if is_breaching and close < element.btm and showPB
+            // Propulsion (with swing detection)
+            if is_breaching and close < element.btm and showPB and pbNearSwingHigh
                 breach_low := ob_breach_low_bear.get(i)
                 newPB = propulsion.new(breach_low, math.avg(breach_low, element.btm), time_to_bar_index(element.loc), line.new(time_to_bar_index(element.loc), breach_low, n + 50, breach_low, extend=extend.right, color=cPBminus, width=2, style=line.style_solid), line.new(time_to_bar_index(element.loc), math.avg(breach_low, element.btm), n + 50, math.avg(breach_low, element.btm), extend=extend.right, color=color.new(cPBminus, 50), width=1, style=line.style_dotted), label.new(time_to_bar_index(element.loc), breach_low, 'PB-', color=color.new(color.white, 100), textcolor=color.red, size=size.small, style=label.style_label_lower_right), -1)
                 a_propulsion_bear.unshift(newPB)
