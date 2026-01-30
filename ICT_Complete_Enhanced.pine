@@ -1372,12 +1372,12 @@ if showOB and per
 
         minima = max[1]
         maxima = min[1]
-        loc = time[1]
+        loc = n - 1
 
         for i = 1 to (n - top.x)-1
             minima := math.min(min[i], minima)
             maxima := minima == min[i] ? max[i] : maxima
-            loc := minima == min[i] ? time[i] : loc
+            loc := minima == min[i] ? n - i : loc
         bullish_ob.unshift(ob.new(maxima, minima, loc))
         // Add breach tracking arrays
         ob_breaching_bull.unshift(false)
@@ -1393,7 +1393,7 @@ if showOB and per
             breach_high = ob_breach_high_bull.get(i)
 
             // Detect breach (dip into OB)
-            if not element.breaker and low <= element.top and high > element.top and bar_index > time_to_bar_index(element.loc) + 1
+            if not element.breaker and low <= element.top and high > element.top and bar_index > element.loc + 1
                 if not is_breaching
                     ob_breaching_bull.set(i, true)
                     ob_breach_low_bull.set(i, low)
@@ -1406,7 +1406,7 @@ if showOB and per
             if is_breaching and close > element.top and showPB and pbNearSwingLow
                 breach_high := ob_breach_high_bull.get(i)
                 // Create Propulsion Block as box
-                newPB = propulsion.new(breach_high, element.top, time_to_bar_index(element.loc), box.new(time_to_bar_index(element.loc), breach_high, n + 50, element.top, bgcolor=cPBplus, border_color=color.new(cPBplus, 50), extend=extend.right, text="PB+", text_color=color.black, text_size=size.small, text_halign=text.align_center, text_valign=text.align_center), label.new(time_to_bar_index(element.loc), breach_high, '', color=color.new(color.white, 100), textcolor=color.green, size=size.small, style=label.style_label_upper_right), 1)
+                newPB = propulsion.new(breach_high, element.top, element.loc, box.new(element.loc, breach_high, n + 50, element.top, bgcolor=cPBplus, border_color=color.new(cPBplus, 50), extend=extend.right, text="PB+", text_color=color.black, text_size=size.small, text_halign=text.align_center, text_valign=text.align_center), label.new(element.loc, breach_high, '', color=color.new(color.white, 100), textcolor=color.green, size=size.small, style=label.style_label_upper_right), 1)
                 a_propulsion_bull.unshift(newPB)
                 // Remove OB (replaced by propulsion)
                 bullish_ob.remove(i)
@@ -1420,7 +1420,7 @@ if showOB and per
                 if math.min(close, open) < element.btm and showBB and bbNearSwingHigh
                     // Create Breaker Block with centered label
                     bbCenter = math.avg(element.top, element.btm)
-                    newBB = breaker.new(element.top, element.btm, bbCenter, time_to_bar_index(element.loc), breakerShowBoxes ? box.new(time_to_bar_index(element.loc), element.top, n + 50, element.btm, border_color=cBB_minA, bgcolor=cBB_minA, extend=extend.right, xloc=xloc.bar_index, text="BB-", text_color=color.black, text_size=size.small, text_halign=text.align_center, text_valign=text.align_center) : box(na), line.new(time_to_bar_index(element.loc), bbCenter, n + 50, bbCenter, extend=extend.right, color=color.new(cBB_minA, 0), width=2, style=line.style_dashed), label.new(n, bbCenter, '', color=color.new(color.white, 100), textcolor=color.red, size=size.small, style=label.style_label_lower_right), false, -1)
+                    newBB = breaker.new(element.top, element.btm, bbCenter, element.loc, breakerShowBoxes ? box.new(element.loc, element.top, n + 50, element.btm, border_color=cBB_minA, bgcolor=cBB_minA, extend=extend.right, xloc=xloc.bar_index, text="BB-", text_color=color.black, text_size=size.small, text_halign=text.align_center, text_valign=text.align_center) : box(na), line.new(element.loc, bbCenter, n + 50, bbCenter, extend=extend.right, color=color.new(cBB_minA, 0), width=2, style=line.style_dashed), label.new(n, bbCenter, '', color=color.new(color.white, 100), textcolor=color.red, size=size.small, style=label.style_label_lower_right), false, -1)
                     a_breaker_bear.unshift(newBB)
                     // Remove OB
                     bullish_ob.remove(i)
@@ -1452,12 +1452,12 @@ if showOB and per
 
         minima = min[1]
         maxima = max[1]
-        loc = time[1]
+        loc = n - 1
 
         for i = 1 to (n - btm.x)-1
             maxima := math.max(max[i], maxima)
             minima := maxima == max[i] ? min[i] : minima
-            loc := maxima == max[i] ? time[i] : loc
+            loc := maxima == max[i] ? n - i : loc
         bearish_ob.unshift(ob.new(maxima, minima, loc))
         ob_breaching_bear.unshift(false)
         ob_breach_low_bear.unshift(high)
@@ -1472,7 +1472,7 @@ if showOB and per
             breach_high = ob_breach_high_bear.get(i)
 
             // Detect breach
-            if not element.breaker and high >= element.btm and low < element.btm and bar_index > time_to_bar_index(element.loc) + 1
+            if not element.breaker and high >= element.btm and low < element.btm and bar_index > element.loc + 1
                 if not is_breaching
                     ob_breaching_bear.set(i, true)
                     ob_breach_low_bear.set(i, low)
@@ -1484,7 +1484,7 @@ if showOB and per
             // Propulsion (with swing detection) - box with centered label
             if is_breaching and close < element.btm and showPB and pbNearSwingHigh
                 breach_low := ob_breach_low_bear.get(i)
-                newPB = propulsion.new(element.btm, breach_low, time_to_bar_index(element.loc), box.new(time_to_bar_index(element.loc), element.btm, n + 50, breach_low, bgcolor=cPBminus, border_color=color.new(cPBminus, 50), extend=extend.right, text="PB-", text_color=color.black, text_size=size.small, text_halign=text.align_center, text_valign=text.align_center), label.new(time_to_bar_index(element.loc), breach_low, '', color=color.new(color.white, 100), textcolor=color.red, size=size.small, style=label.style_label_lower_right), -1)
+                newPB = propulsion.new(element.btm, breach_low, element.loc, box.new(element.loc, element.btm, n + 50, breach_low, bgcolor=cPBminus, border_color=color.new(cPBminus, 50), extend=extend.right, text="PB-", text_color=color.black, text_size=size.small, text_halign=text.align_center, text_valign=text.align_center), label.new(element.loc, breach_low, '', color=color.new(color.white, 100), textcolor=color.red, size=size.small, style=label.style_label_lower_right), -1)
                 a_propulsion_bear.unshift(newPB)
                 bearish_ob.remove(i)
                 ob_breaching_bear.remove(i)
@@ -1496,7 +1496,7 @@ if showOB and per
             if not element.breaker
                 if math.max(close, open) > element.top and showBB and bbNearSwingLow
                     bbCenter = math.avg(element.top, element.btm)
-                    newBB = breaker.new(element.top, element.btm, bbCenter, time_to_bar_index(element.loc), breakerShowBoxes ? box.new(time_to_bar_index(element.loc), element.top, n + 50, element.btm, border_color=cBBplusA, bgcolor=cBBplusA, extend=extend.right, xloc=xloc.bar_index, text="BB+", text_color=color.black, text_size=size.small, text_halign=text.align_center, text_valign=text.align_center) : box(na), line.new(time_to_bar_index(element.loc), bbCenter, n + 50, bbCenter, extend=extend.right, color=color.new(cBBplusA, 0), width=2, style=line.style_dashed), label.new(n, bbCenter, '', color=color.new(color.white, 100), textcolor=color.green, size=size.small, style=label.style_label_upper_right), false, 1)
+                    newBB = breaker.new(element.top, element.btm, bbCenter, element.loc, breakerShowBoxes ? box.new(element.loc, element.top, n + 50, element.btm, border_color=cBBplusA, bgcolor=cBBplusA, extend=extend.right, xloc=xloc.bar_index, text="BB+", text_color=color.black, text_size=size.small, text_halign=text.align_center, text_valign=text.align_center) : box(na), line.new(element.loc, bbCenter, n + 50, bbCenter, extend=extend.right, color=color.new(cBBplusA, 0), width=2, style=line.style_dashed), label.new(n, bbCenter, '', color=color.new(color.white, 100), textcolor=color.green, size=size.small, style=label.style_label_upper_right), false, 1)
                     a_breaker_bull.unshift(newBB)
                     bearish_ob.remove(i)
                     ob_breaching_bear.remove(i)
