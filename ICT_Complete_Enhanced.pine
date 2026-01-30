@@ -901,18 +901,30 @@ SupportFromDate = timestamp(year, month, dayofmonth - isSupportStartTimeAlignmen
 SupportToDate = timestamp(year, month, dayofmonth + isSupportEndTimeAlignment, end_support_hour_int, end_support_minute_int) - chart_time_period_int
 
 if showPreviousDayHiLo and timeframe.period != "D" and timeframe.period != "W" and timeframe.period != "M"
-    dailyHighBox = box.new(SupportFromDate, pdh + (pdh * 0.0003), SupportToDate, pdh - (pdh * 0.0003), xloc=xloc.bar_time, extend=extend.right, border_color=color.new(color.white, 100), bgcolor=support_line_color, text="𝗗𝗮𝗶𝗹𝘆 𝗛𝗶𝗴𝗵", text_color=color.black, text_size=size.small, text_halign=text.align_center, text_valign=text.align_center)
-    box.delete(dailyHighBox[1])
+    // Daily High - horizontal line with label above on right
+    dailyHighLine = line.new(n - 1, pdh, n + 50, pdh, extend=extend.right, color=support_line_color, width=supportLineWidth, style=line.style_solid)
+    line.delete(dailyHighLine[1])
+    dailyHighLabel = label.new(n + 50, pdh, text="𝗗𝗮𝗶𝗹𝘆 𝗛𝗶𝗴𝗵", style=label.style_label_lower_right, color=color.new(color.white, 100), textcolor=support_line_color, size=size.small)
+    label.delete(dailyHighLabel[1])
 
-    dailyLowBox = box.new(SupportFromDate, pdl + (pdl * 0.0003), SupportToDate, pdl - (pdl * 0.0003), xloc=xloc.bar_time, extend=extend.right, border_color=color.new(color.white, 100), bgcolor=support_line_color, text="𝗗𝗮𝗶𝗹𝘆 𝗟𝗼𝘄", text_color=color.black, text_size=size.small, text_halign=text.align_center, text_valign=text.align_center)
-    box.delete(dailyLowBox[1])
+    // Daily Low - horizontal line with label above on right
+    dailyLowLine = line.new(n - 1, pdl, n + 50, pdl, extend=extend.right, color=support_line_color, width=supportLineWidth, style=line.style_solid)
+    line.delete(dailyLowLine[1])
+    dailyLowLabel = label.new(n + 50, pdl, text="𝗗𝗮𝗶𝗹𝘆 𝗟𝗼𝘄", style=label.style_label_upper_right, color=color.new(color.white, 100), textcolor=support_line_color, size=size.small)
+    label.delete(dailyLowLabel[1])
 
 if showLastWeeklyHiLo and timeframe.period != "D" and timeframe.period != "W" and timeframe.period != "M"
-    weeklyHighBox = box.new(SupportFromDate, lwh + (lwh * 0.0003), SupportToDate, lwh - (lwh * 0.0003), xloc=xloc.bar_time, extend=extend.right, border_color=color.new(color.white, 100), bgcolor=support_last_week_line_color, text="𝗪𝗲𝗲𝗸𝗹𝘆 𝗛𝗶𝗴𝗵", text_color=color.black, text_size=size.small, text_halign=text.align_center, text_valign=text.align_center)
-    box.delete(weeklyHighBox[1])
+    // Weekly High - horizontal line with label above on right
+    weeklyHighLine = line.new(n - 1, lwh, n + 50, lwh, extend=extend.right, color=support_last_week_line_color, width=supportLastWeekLineWidth, style=line.style_solid)
+    line.delete(weeklyHighLine[1])
+    weeklyHighLabel = label.new(n + 50, lwh, text="𝗪𝗲𝗲𝗸𝗹𝘆 𝗛𝗶𝗴𝗵", style=label.style_label_lower_right, color=color.new(color.white, 100), textcolor=support_last_week_line_color, size=size.small)
+    label.delete(weeklyHighLabel[1])
 
-    weeklyLowBox = box.new(SupportFromDate, lwl + (lwl * 0.0003), SupportToDate, lwl - (lwl * 0.0003), xloc=xloc.bar_time, extend=extend.right, border_color=color.new(color.white, 100), bgcolor=support_last_week_line_color, text="𝗪𝗲𝗲𝗸𝗹𝘆 𝗟𝗼𝘄", text_color=color.black, text_size=size.small, text_halign=text.align_center, text_valign=text.align_center)
-    box.delete(weeklyLowBox[1])
+    // Weekly Low - horizontal line with label above on right
+    weeklyLowLine = line.new(n - 1, lwl, n + 50, lwl, extend=extend.right, color=support_last_week_line_color, width=supportLastWeekLineWidth, style=line.style_solid)
+    line.delete(weeklyLowLine[1])
+    weeklyLowLabel = label.new(n + 50, lwl, text="𝗪𝗲𝗲𝗸𝗹𝘆 𝗟𝗼𝘄", style=label.style_label_upper_right, color=color.new(color.white, 100), textcolor=support_last_week_line_color, size=size.small)
+    label.delete(weeklyLowLabel[1])
 
 //Pivotpoints
 ph          = ta.pivothigh(3, 1), lPh = fixnan(ph)
