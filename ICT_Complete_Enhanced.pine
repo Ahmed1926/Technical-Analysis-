@@ -89,6 +89,8 @@ mbShowBear  = input.bool  (  true  , title = 'Show Bearish MB'                  
 mbBullColor = input.color (color.new(color.green, 90), title = 'Bullish MB'          ,   group = 'Mitigation Blocks', inline = 'mb1'                )
 mbBearColor = input.color (color.new(color.red, 90), title = 'Bearish MB'            ,   group = 'Mitigation Blocks', inline = 'mb1'                )
 mbLookback  = input.int   (     3  , title = 'Max Visible MBs'                         ,   group = 'Mitigation Blocks'                                )
+mbSwingLen  = input.int   (     5  , title = 'Swing Detection Length'                  ,   group = 'Mitigation Blocks', minval = 1, maxval = 20      )
+mbMinBars   = input.int   (     3  , title = 'Min Bars Since Swing'                    ,   group = 'Mitigation Blocks', minval = 1, maxval = 20      )
 
 //-----------------------------------------------------------------------------}
 //Liquidity Settings
@@ -883,26 +885,18 @@ SupportFromDate = timestamp(year, month, dayofmonth - isSupportStartTimeAlignmen
 SupportToDate = timestamp(year, month, dayofmonth + isSupportEndTimeAlignment, end_support_hour_int, end_support_minute_int) - chart_time_period_int
 
 if showPreviousDayHiLo and timeframe.period != "D" and timeframe.period != "W" and timeframe.period != "M"
-    yesterdayHighLine = line.new(SupportFromDate, pdh, SupportToDate, pdh, xloc=xloc.bar_time, extend=extend.right, color=support_line_color, style=line.style_dashed, width = supportLineWidth)
-    line.delete(yesterdayHighLine[1])
-    dailyHighLabel = label.new(math.round(math.avg(SupportFromDate, SupportToDate)), pdh, "𝗗𝗮𝗶𝗹𝘆 𝗛𝗶𝗴𝗵", xloc=xloc.bar_time, yloc=yloc.price, color=color.new(color.black, 100), style=label.style_label_center, textcolor=color.black, size=size.small)
-    label.delete(dailyHighLabel[1])
+    dailyHighBox = box.new(SupportFromDate, pdh + (pdh * 0.0003), SupportToDate, pdh - (pdh * 0.0003), xloc=xloc.bar_time, extend=extend.right, border_color=color.new(color.white, 100), bgcolor=support_line_color, text="𝗗𝗮𝗶𝗹𝘆 𝗛𝗶𝗴𝗵", text_color=color.black, text_size=size.small, text_halign=text.align_center, text_valign=text.align_center)
+    box.delete(dailyHighBox[1])
 
-    yesterdayLowLine = line.new(SupportFromDate, pdl, SupportToDate, pdl, xloc=xloc.bar_time, extend=extend.right, color=support_line_color, style=line.style_dashed, width = supportLineWidth)
-    line.delete(yesterdayLowLine[1])
-    dailyLowLabel = label.new(math.round(math.avg(SupportFromDate, SupportToDate)), pdl, "𝗗𝗮𝗶𝗹𝘆 𝗟𝗼𝘄", xloc=xloc.bar_time, yloc=yloc.price, color=color.new(color.black, 100), style=label.style_label_center, textcolor=color.black, size=size.small)
-    label.delete(dailyLowLabel[1])
+    dailyLowBox = box.new(SupportFromDate, pdl + (pdl * 0.0003), SupportToDate, pdl - (pdl * 0.0003), xloc=xloc.bar_time, extend=extend.right, border_color=color.new(color.white, 100), bgcolor=support_line_color, text="𝗗𝗮𝗶𝗹𝘆 𝗟𝗼𝘄", text_color=color.black, text_size=size.small, text_halign=text.align_center, text_valign=text.align_center)
+    box.delete(dailyLowBox[1])
 
 if showLastWeeklyHiLo and timeframe.period != "D" and timeframe.period != "W" and timeframe.period != "M"
-    weekLastHighLine = line.new(SupportFromDate, lwh, SupportToDate, lwh, xloc=xloc.bar_time, extend=extend.right, color=support_last_week_line_color, style=line.style_dashed, width = supportLastWeekLineWidth)
-    line.delete(weekLastHighLine[1])
-    weeklyHighLabel = label.new(math.round(math.avg(SupportFromDate, SupportToDate)), lwh, "𝗪𝗲𝗲𝗸𝗹𝘆 𝗛𝗶𝗴𝗵", xloc=xloc.bar_time, yloc=yloc.price, color=color.new(color.black, 100), style=label.style_label_center, textcolor=color.black, size=size.small)
-    label.delete(weeklyHighLabel[1])
+    weeklyHighBox = box.new(SupportFromDate, lwh + (lwh * 0.0003), SupportToDate, lwh - (lwh * 0.0003), xloc=xloc.bar_time, extend=extend.right, border_color=color.new(color.white, 100), bgcolor=support_last_week_line_color, text="𝗪𝗲𝗲𝗸𝗹𝘆 𝗛𝗶𝗴𝗵", text_color=color.black, text_size=size.small, text_halign=text.align_center, text_valign=text.align_center)
+    box.delete(weeklyHighBox[1])
 
-    weekLastLowLine = line.new(SupportFromDate, lwl, SupportToDate, lwl, xloc=xloc.bar_time, extend=extend.right, color=support_last_week_line_color, style=line.style_dashed, width = supportLastWeekLineWidth)
-    line.delete(weekLastLowLine[1])
-    weeklyLowLabel = label.new(math.round(math.avg(SupportFromDate, SupportToDate)), lwl, "𝗪𝗲𝗲𝗸𝗹𝘆 𝗟𝗼𝘄", xloc=xloc.bar_time, yloc=yloc.price, color=color.new(color.black, 100), style=label.style_label_center, textcolor=color.black, size=size.small)
-    label.delete(weeklyLowLabel[1])
+    weeklyLowBox = box.new(SupportFromDate, lwl + (lwl * 0.0003), SupportToDate, lwl - (lwl * 0.0003), xloc=xloc.bar_time, extend=extend.right, border_color=color.new(color.white, 100), bgcolor=support_last_week_line_color, text="𝗪𝗲𝗲𝗸𝗹𝘆 𝗟𝗼𝘄", text_color=color.black, text_size=size.small, text_halign=text.align_center, text_valign=text.align_center)
+    box.delete(weeklyLowBox[1])
 
 //Pivotpoints
 ph          = ta.pivothigh(3, 1), lPh = fixnan(ph)
@@ -1482,14 +1476,26 @@ if a_propulsion_bear.size() > pbMaxCount
 //-----------------------------------------------------------------------------}
 // Mitigation Blocks
 //-----------------------------------------------------------------------------{
+// Swing detection for stronger MBs
+mbSwingHigh = ta.pivothigh(high, mbSwingLen, mbSwingLen)
+mbSwingLow = ta.pivotlow(low, mbSwingLen, mbSwingLen)
+barsSinceSwingHigh = ta.barssince(not na(mbSwingHigh))
+barsSinceSwingLow = ta.barssince(not na(mbSwingLow))
+
 if showMB and mbShowBull
-    bullishMB = close[1] > open[1] and low <= low[1] and close > low[1]
+    // Bullish MB: Strong bullish candle at a swing low area being retested
+    isNearSwingLow = barsSinceSwingLow <= mbMinBars * 3
+    strongBullCandle = close[1] > open[1] and (close[1] - open[1]) > (high[1] - low[1]) * 0.5
+    bullishMB = strongBullCandle and low <= low[1] and close > low[1] and isNearSwingLow
     if bullishMB
         newMB = mitblock.new(high[1], low[1], n - 1, box.new(n - 1, high[1], n + 20, low[1], bgcolor=mbBullColor, border_color=color.new(color.green, 100)), label.new(n + 20, low[1], 'MB+', style=label.style_label_upper_right, color=color.new(color.white, 100), textcolor=color.green, size=size.tiny))
         a_mitblock_bull.unshift(newMB)
 
 if showMB and mbShowBear
-    bearishMB = close[1] < open[1] and high >= high[1] and close < high[1]
+    // Bearish MB: Strong bearish candle at a swing high area being retested
+    isNearSwingHigh = barsSinceSwingHigh <= mbMinBars * 3
+    strongBearCandle = close[1] < open[1] and (open[1] - close[1]) > (high[1] - low[1]) * 0.5
+    bearishMB = strongBearCandle and high >= high[1] and close < high[1] and isNearSwingHigh
     if bearishMB
         newMB = mitblock.new(high[1], low[1], n - 1, box.new(n - 1, high[1], n + 20, low[1], bgcolor=mbBearColor, border_color=color.new(color.red, 100)), label.new(n + 20, high[1], 'MB-', style=label.style_label_lower_right, color=color.new(color.white, 100), textcolor=color.red, size=size.tiny))
         a_mitblock_bear.unshift(newMB)
