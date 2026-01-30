@@ -513,7 +513,7 @@ draw(left, col) =>
                                 minP := aZZ.y.get(i)
                             if aZZ.y.get(i) < maxP
                                 maxP := aZZ.y.get(i)
-            if count > 2
+            if count > 2 and liqNearSwingHigh
                 getB = b_liq_B.get(0)
                 if st_B == getB.bx.get_left()
                     getB.bx.set_top(math.avg(minP, maxP) + (atr/a))
@@ -569,7 +569,7 @@ draw(left, col) =>
                                 minP := aZZ.y.get(i)
                             if aZZ.y.get(i) < maxP
                                 maxP := aZZ.y.get(i)
-            if count > 2
+            if count > 2 and liqNearSwingLow
                 getB = b_liq_S.get(0)
                 if st_B == getB.bx.get_left()
                     getB.bx.set_top(math.avg(minP, maxP) + (atr/a))
@@ -593,15 +593,15 @@ draw(left, col) =>
                     getLast.bx.delete()
                     getLast.ln.delete()
     //
-    //Market Structure Shift
+    //Market Structure Shift (with swing detection)
     if showMS
         //
         iH = aZZ.d.get(2) ==  1 ? 2 : 1
         iL = aZZ.d.get(2) == -1 ? 2 : 1
         //
         switch
-            // MSS Bullish
-            close > aZZ.y.get(iH) and aZZ.d.get(iH) ==  1 and MSS.dir <  1 =>
+            // MSS Bullish (requires recent swing low for confirmation)
+            close > aZZ.y.get(iH) and aZZ.d.get(iH) ==  1 and MSS.dir <  1 and msNearSwingLow =>
                 MSS.dir :=  1
                 if i_mode == 'Present'
                     MSS.l_bosBl.clear_aLabLin(), MSS.l_bosBr.clear_aLabLin()
@@ -614,8 +614,8 @@ draw(left, col) =>
                 MSS.lbMssBl.unshift(label.new(
                   math.round(math.avg(aZZ.x.get(iH), n)), aZZ.y.get(iH), text ='MSS'
                   , style=label.style_label_down, size=size.tiny, color=color(na), textcolor=cMSSbl))
-            // MSS Bearish
-            close < aZZ.y.get(iL) and aZZ.d.get(iL) == -1 and MSS.dir > -1 =>
+            // MSS Bearish (requires recent swing high for confirmation)
+            close < aZZ.y.get(iL) and aZZ.d.get(iL) == -1 and MSS.dir > -1 and msNearSwingHigh =>
                 MSS.dir := -1
                 if i_mode == 'Present'
                     MSS.l_bosBl.clear_aLabLin(), MSS.l_bosBr.clear_aLabLin()
@@ -628,8 +628,8 @@ draw(left, col) =>
                 MSS.lbMssBr.unshift(label.new(
                   math.round(math.avg(aZZ.x.get(iL), n)), aZZ.y.get(iL), text ='MSS'
                   , style=label.style_label_up  , size=size.tiny, color=color(na), textcolor=cMSSbr))
-            // BOS Bullish
-            MSS.dir ==  1 and close > aZZ.y.get(iH) and iBOS =>
+            // BOS Bullish (with swing detection)
+            MSS.dir ==  1 and close > aZZ.y.get(iH) and iBOS and msNearSwingLow =>
                 if MSS.l_bosBl.size() > 0
                     if aZZ.y.get(iH) != MSS.l_bosBl.get(0).get_y2() and
                        aZZ.y.get(iH) != MSS.l_mssBl.get(0).get_y2()
@@ -637,8 +637,8 @@ draw(left, col) =>
                 else
                     if aZZ.y.get(iH) != MSS.l_mssBl.get(0).get_y2()
                         MSS.l_bosBl.unshift(set_lin(iH, 'Bl')), MSS.lbBosBl.unshift(set_lab(iH, 'Bl'))
-            // BOS Bearish
-            MSS.dir == -1 and close < aZZ.y.get(iL) and iBOS =>
+            // BOS Bearish (with swing detection)
+            MSS.dir == -1 and close < aZZ.y.get(iL) and iBOS and msNearSwingHigh =>
                 if MSS.l_bosBr.size() > 0
                     if aZZ.y.get(iL) != MSS.l_bosBr.get(0).get_y2() and
                        aZZ.y.get(iL) != MSS.l_mssBr.get(0).get_y2()
@@ -1381,9 +1381,9 @@ if showOB and per
                 ob_breach_high_bull.remove(i)
                 continue
 
-            // Breaker: Price breaks below OB
+            // Breaker: Price breaks below OB (with swing detection)
             if not element.breaker
-                if math.min(close, open) < element.btm and showBB
+                if math.min(close, open) < element.btm and showBB and bbNearSwingHigh
                     // Create Breaker Block
                     bbCenter = math.avg(element.top, element.btm)
                     newBB = breaker.new(element.top, element.btm, bbCenter, time_to_bar_index(element.loc), breakerShowBoxes ? box.new(time_to_bar_index(element.loc), element.top, n + 50, element.btm, border_color=cBB_minA, bgcolor=cBB_minA, extend=extend.right, xloc=xloc.bar_index) : box(na), line.new(time_to_bar_index(element.loc), bbCenter, n + 50, bbCenter, extend=extend.right, color=color.new(cBB_minA, 0), width=2, style=line.style_dashed), label.new(n, bbCenter, 'BB-', color=color.new(color.white, 100), textcolor=color.red, size=size.small, style=label.style_label_lower_right), false, -1)
@@ -1458,9 +1458,9 @@ if showOB and per
                 ob_breach_high_bear.remove(i)
                 continue
 
-            // Breaker
+            // Breaker (with swing detection)
             if not element.breaker
-                if math.max(close, open) > element.top and showBB
+                if math.max(close, open) > element.top and showBB and bbNearSwingLow
                     bbCenter = math.avg(element.top, element.btm)
                     newBB = breaker.new(element.top, element.btm, bbCenter, time_to_bar_index(element.loc), breakerShowBoxes ? box.new(time_to_bar_index(element.loc), element.top, n + 50, element.btm, border_color=cBBplusA, bgcolor=cBBplusA, extend=extend.right, xloc=xloc.bar_index) : box(na), line.new(time_to_bar_index(element.loc), bbCenter, n + 50, bbCenter, extend=extend.right, color=color.new(cBBplusA, 0), width=2, style=line.style_dashed), label.new(n, bbCenter, 'BB+', color=color.new(color.white, 100), textcolor=color.green, size=size.small, style=label.style_label_upper_right), false, 1)
                     a_breaker_bull.unshift(newBB)
