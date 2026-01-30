@@ -230,6 +230,25 @@ b          = color.b(chart.bg_color)
 isDark     = r < 80 and g < 80 and b < 80
 
 //-----------------------------------------------------------------------------}
+//Swing Detection Calculations (must be before draw function)
+//-----------------------------------------------------------------------------{
+// Liquidity swing detection
+liqSwingHigh = ta.pivothigh(high, liqSwingLen, liqSwingLen)
+liqSwingLow = ta.pivotlow(low, liqSwingLen, liqSwingLen)
+liqBarsSinceSwingHigh = ta.barssince(not na(liqSwingHigh))
+liqBarsSinceSwingLow = ta.barssince(not na(liqSwingLow))
+liqNearSwingLow = liqBarsSinceSwingLow <= liqMinBars * 3
+liqNearSwingHigh = liqBarsSinceSwingHigh <= liqMinBars * 3
+
+// Market Structure swing detection
+msSwingHigh = ta.pivothigh(high, msSwingLen, msSwingLen)
+msSwingLow = ta.pivotlow(low, msSwingLen, msSwingLen)
+msBarsSinceSwingHigh = ta.barssince(not na(msSwingHigh))
+msBarsSinceSwingLow = ta.barssince(not na(msSwingLow))
+msNearSwingLow = msBarsSinceSwingLow <= msMinBars * 3
+msNearSwingHigh = msBarsSinceSwingHigh <= msMinBars * 3
+
+//-----------------------------------------------------------------------------}
 //User Defined Types
 //-----------------------------------------------------------------------------{
 type ZZ
@@ -977,22 +996,6 @@ bbBarsSinceSwingHigh = ta.barssince(not na(bbSwingHigh))
 bbBarsSinceSwingLow = ta.barssince(not na(bbSwingLow))
 bbNearSwingLow = bbBarsSinceSwingLow <= bbMinBars * 3
 bbNearSwingHigh = bbBarsSinceSwingHigh <= bbMinBars * 3
-
-// Liquidity swing detection
-liqSwingHigh = ta.pivothigh(high, liqSwingLen, liqSwingLen)
-liqSwingLow = ta.pivotlow(low, liqSwingLen, liqSwingLen)
-liqBarsSinceSwingHigh = ta.barssince(not na(liqSwingHigh))
-liqBarsSinceSwingLow = ta.barssince(not na(liqSwingLow))
-liqNearSwingLow = liqBarsSinceSwingLow <= liqMinBars * 3
-liqNearSwingHigh = liqBarsSinceSwingHigh <= liqMinBars * 3
-
-// Market Structure swing detection
-msSwingHigh = ta.pivothigh(high, msSwingLen, msSwingLen)
-msSwingLow = ta.pivotlow(low, msSwingLen, msSwingLen)
-msBarsSinceSwingHigh = ta.barssince(not na(msSwingHigh))
-msBarsSinceSwingLow = ta.barssince(not na(msSwingLow))
-msNearSwingLow = msBarsSinceSwingLow <= msMinBars * 3
-msNearSwingHigh = msBarsSinceSwingHigh <= msMinBars * 3
 
 // Order Block swing detection
 obSwingHigh = ta.pivothigh(high, obSwingLen, obSwingLen)
