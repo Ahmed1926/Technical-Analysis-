@@ -3,7 +3,7 @@
 // Enhanced by Claude - Integrated Breaker Blocks, Propulsion Blocks, Mitigation Blocks, and Trading Sessions
 
 //@version=5
-indicator("ICT Complete Enhanced [LuxAlgo + Sessions]", max_lines_count=500, max_boxes_count=500, max_labels_count=500, max_bars_back=3000, overlay=true)
+indicator("ICT Main", max_lines_count=500, max_boxes_count=500, max_labels_count=500, max_bars_back=3000, overlay=true)
 
 //-----------------------------------------------------------------------------}
 //Strings
