@@ -23,6 +23,8 @@ i_mode     = input.string(         'Present'      , title = 'Mode'              
 //-----------------------------------------------------------------------------{
 showMS     = input.bool  (           true         , title = ''                       ,   group = 'Market Structures', inline = 'MS'                                    )
 len        = input.int   (            10          , title = '     Length   ' +sp2    ,   group = 'Market Structures', inline = 'MS'       , minval = 3, maxval =  10   )
+msSwingLen = input.int   (             5          , title = 'Swing Detection Length' ,   group = 'Market Structures', minval = 1, maxval = 20                          )
+msMinBars  = input.int   (             3          , title = 'Min Bars Since Swing'   ,   group = 'Market Structures', minval = 1, maxval = 20                          )
 
 iMSS       = input.bool  (           true         , title = '       MSS'     +sp1    ,   group = 'Market Structures', inline = 'M1'                                    )
 cMSSbl     = input.color (color.new(#00e6a1,  0), title = 'bullish'                ,   group = 'Market Structures', inline = 'M1'                                    )
@@ -36,6 +38,8 @@ cBOSbr     = input.color (color.new(#e60400,  0), title = 'bearish'             
 //Displacement Settings
 //-----------------------------------------------------------------------------{
 sDispl     = input.bool  (           true         , title = 'Show Displacement'      ,   group = 'Displacement'                                                        )
+dispSwingLen = input.int (             5          , title = 'Swing Detection Length' ,   group = 'Displacement', minval = 1, maxval = 20                               )
+dispMinBars  = input.int (             3          , title = 'Min Bars Since Swing'   ,   group = 'Displacement', minval = 1, maxval = 20                               )
 perc_Body  = 0.36
 bxBack     = 10
 
@@ -45,6 +49,8 @@ bxBack     = 10
 sVimbl     = input.bool  (           true         , title = ''                       ,   group = 'Volume Imbalance' , inline = 'VI'                                    )
 visVim     = input.int   (             5          , title = "   # Visible VI's  "+sp1,   group = 'Volume Imbalance' , inline = 'VI'      , minval = 2, maxval = 100    )
 cVimbl     = input.color (color.new(#06b2d0,  0), title = ''                       ,   group = 'Volume Imbalance' , inline = 'VI'                                    )
+viSwingLen = input.int   (             5          , title = 'Swing Detection Length' ,   group = 'Volume Imbalance', minval = 1, maxval = 20                           )
+viMinBars  = input.int   (             3          , title = 'Min Bars Since Swing'   ,   group = 'Volume Imbalance', minval = 1, maxval = 20                           )
 
 //-----------------------------------------------------------------------------}
 //Order Blocks Settings
@@ -67,6 +73,8 @@ showLabels = input.bool  (          false, title = 'Show Historical Polarity Cha
 showBB           = input.bool  (  true    , title = 'Show Breaker Blocks'            ,   group = 'Breaker Blocks'                                  )
 breakerShowBoxes = input.bool  (  true    , title = 'Show as Boxes'                  ,   group = 'Breaker Blocks'                                  )
 bbMaxCount       = input.int   (      3   , title = 'Max Breaker Blocks'             ,   group = 'Breaker Blocks', minval = 1, maxval = 50          )
+bbSwingLen       = input.int   (      5   , title = 'Swing Detection Length'         ,   group = 'Breaker Blocks', minval = 1, maxval = 20          )
+bbMinBars        = input.int   (      3   , title = 'Min Bars Since Swing'           ,   group = 'Breaker Blocks', minval = 1, maxval = 20          )
 cBBplusA         = input.color (color.new(#0cc11a, 90), title = 'Bullish BB'        ,   group = 'Breaker Blocks', inline = 'bb1'                   )
 cBB_minA         = input.color (color.new(#ff1100, 90), title = 'Bearish BB'        ,   group = 'Breaker Blocks', inline = 'bb1'                   )
 
@@ -99,6 +107,8 @@ showLq     = input.bool  (           true         , title = 'Show Liquidity'    
 a     = 10 / input.float (             4          , title = 'margin'                 ,   group = 'Liquidity'   , step = 0.1, minval = 2, maxval =   7                  )
 visLiq     = input.int   (             2          , title = '# Visible Liq. boxes'   ,   group = 'Liquidity'
            ,                                       minval = 1         , maxval = 50  , tooltip = 'In the same direction'                                               )
+liqSwingLen = input.int  (             5          , title = 'Swing Detection Length' ,   group = 'Liquidity', minval = 1, maxval = 20                                  )
+liqMinBars  = input.int  (             3          , title = 'Min Bars Since Swing'   ,   group = 'Liquidity', minval = 1, maxval = 20                                  )
 cLIQ_B     = input.color (color.new(#fa451c,  0), title = 'Buyside Liquidity  '    ,   group = 'Liquidity'                                                           )
 cLIQ_S     = input.color (color.new(#1ce4fa,  0), title = 'Sellside Liquidity'     ,   group = 'Liquidity'                                                           )
 
@@ -930,6 +940,46 @@ fvgBarsSinceSwingLow = ta.barssince(not na(fvgSwingLow))
 fvgNearSwingLow = fvgBarsSinceSwingLow <= fvgMinBars * 3
 fvgNearSwingHigh = fvgBarsSinceSwingHigh <= fvgMinBars * 3
 
+// Volume Imbalance swing detection
+viSwingHigh = ta.pivothigh(high, viSwingLen, viSwingLen)
+viSwingLow = ta.pivotlow(low, viSwingLen, viSwingLen)
+viBarsSinceSwingHigh = ta.barssince(not na(viSwingHigh))
+viBarsSinceSwingLow = ta.barssince(not na(viSwingLow))
+viNearSwingLow = viBarsSinceSwingLow <= viMinBars * 3
+viNearSwingHigh = viBarsSinceSwingHigh <= viMinBars * 3
+
+// Displacement swing detection
+dispSwingHigh = ta.pivothigh(high, dispSwingLen, dispSwingLen)
+dispSwingLow = ta.pivotlow(low, dispSwingLen, dispSwingLen)
+dispBarsSinceSwingHigh = ta.barssince(not na(dispSwingHigh))
+dispBarsSinceSwingLow = ta.barssince(not na(dispSwingLow))
+dispNearSwingLow = dispBarsSinceSwingLow <= dispMinBars * 3
+dispNearSwingHigh = dispBarsSinceSwingHigh <= dispMinBars * 3
+
+// Breaker Block swing detection
+bbSwingHigh = ta.pivothigh(high, bbSwingLen, bbSwingLen)
+bbSwingLow = ta.pivotlow(low, bbSwingLen, bbSwingLen)
+bbBarsSinceSwingHigh = ta.barssince(not na(bbSwingHigh))
+bbBarsSinceSwingLow = ta.barssince(not na(bbSwingLow))
+bbNearSwingLow = bbBarsSinceSwingLow <= bbMinBars * 3
+bbNearSwingHigh = bbBarsSinceSwingHigh <= bbMinBars * 3
+
+// Liquidity swing detection
+liqSwingHigh = ta.pivothigh(high, liqSwingLen, liqSwingLen)
+liqSwingLow = ta.pivotlow(low, liqSwingLen, liqSwingLen)
+liqBarsSinceSwingHigh = ta.barssince(not na(liqSwingHigh))
+liqBarsSinceSwingLow = ta.barssince(not na(liqSwingLow))
+liqNearSwingLow = liqBarsSinceSwingLow <= liqMinBars * 3
+liqNearSwingHigh = liqBarsSinceSwingHigh <= liqMinBars * 3
+
+// Market Structure swing detection
+msSwingHigh = ta.pivothigh(high, msSwingLen, msSwingLen)
+msSwingLow = ta.pivotlow(low, msSwingLen, msSwingLen)
+msBarsSinceSwingHigh = ta.barssince(not na(msSwingHigh))
+msBarsSinceSwingLow = ta.barssince(not na(msSwingLow))
+msNearSwingLow = msBarsSinceSwingLow <= msMinBars * 3
+msNearSwingHigh = msBarsSinceSwingHigh <= msMinBars * 3
+
 // FVG detection (gap up = bullish, gap down = bearish)
 fvgUP = L_bodyUP[1] and low > high[2] and fvgNearSwingLow
 fvgDN = L_bodyDN[1] and high < low[2] and fvgNearSwingHigh
@@ -945,9 +995,9 @@ isFVGdn = shwFVG and fvgDN
 isIFVGup = shwIFVG and ifvgUP
 isIFVGdn = shwIFVG and ifvgDN
 
-//Volume Imbalance
-vImb_Bl     = open > close[1] and high[1] > low  and close > close[1] and open > open[1] and high[1] < mn
-vImb_Br     = open < close[1] and low [1] < high and close < close[1] and open < open[1] and low [1] > mx
+//Volume Imbalance with swing detection
+vImb_Bl     = open > close[1] and high[1] > low  and close > close[1] and open > open[1] and high[1] < mn and viNearSwingLow
+vImb_Br     = open < close[1] and low [1] < high and close < close[1] and open < open[1] and low [1] > mx and viNearSwingHigh
 
 if sVimbl
     if vImb_Bl
@@ -1743,16 +1793,16 @@ if barstate.islast
         _1618.setLine(rt, _0 + m1618, rt + plus, _0 + m1618)
 
 //-----------------------------------------------------------------------------}
-//Displacement
+//Displacement with swing detection
 //-----------------------------------------------------------------------------{
 plotshape(sDispl ? per       ?
-     L_bodyUP    ? low  : na : na : na
+     L_bodyUP and dispNearSwingLow ? low  : na : na : na
      , title     = 'Displacement UP'
      , style     = shape.labelup
      , color     = color.lime
      , location  = location.belowbar)
 plotshape(sDispl ? per       ?
-     L_bodyDN    ? high : na : na : na
+     L_bodyDN and dispNearSwingHigh ? high : na : na : na
      , title     = 'Displacement DN'
      , style     = shape.labeldown
      , color     = color.red
