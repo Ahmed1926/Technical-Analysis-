@@ -404,6 +404,15 @@ var line _0786 = line.new(na, na, na, na, color=color.new(color.orange, 25), sty
 var line _one_ = line.new(na, na, na, na, color=color.new(color.silver,  5), style=line.style_solid , xloc= xloc, extend=ext)
 var line _1618 = line.new(na, na, na, na, color=color.new(color.yellow, 25), style=line.style_solid , xloc= xloc, extend=ext)
 
+var label _lbl_zero = label.new(na, na, "0", xloc=xloc, style=label.style_label_left, color=color.new(color.white, 100), textcolor=color.silver, size=size.small)
+var label _lbl_0236 = label.new(na, na, "0.236", xloc=xloc, style=label.style_label_left, color=color.new(color.white, 100), textcolor=color.orange, size=size.small)
+var label _lbl_0382 = label.new(na, na, "0.382", xloc=xloc, style=label.style_label_left, color=color.new(color.white, 100), textcolor=color.yellow, size=size.small)
+var label _lbl_0500 = label.new(na, na, "0.5", xloc=xloc, style=label.style_label_left, color=color.new(color.white, 100), textcolor=color.green, size=size.small)
+var label _lbl_0618 = label.new(na, na, "0.618", xloc=xloc, style=label.style_label_left, color=color.new(color.white, 100), textcolor=color.yellow, size=size.small)
+var label _lbl_0786 = label.new(na, na, "0.786", xloc=xloc, style=label.style_label_left, color=color.new(color.white, 100), textcolor=color.orange, size=size.small)
+var label _lbl_one_ = label.new(na, na, "1", xloc=xloc, style=label.style_label_left, color=color.new(color.white, 100), textcolor=color.silver, size=size.small)
+var label _lbl_1618 = label.new(na, na, "1.618", xloc=xloc, style=label.style_label_left, color=color.new(color.white, 100), textcolor=color.yellow, size=size.small)
+
 //-----------------------------------------------------------------------------}
 //Functions/methods
 //-----------------------------------------------------------------------------{
@@ -1808,6 +1817,15 @@ if barstate.islast
         _0786.setLine(rt, _0 + m0786, rt + plus, _0 + m0786)
         _one_.setLine(rt, _1        , rt + plus, _1        )
         _1618.setLine(rt, _0 + m1618, rt + plus, _0 + m1618)
+        // Update Fibonacci level labels
+        _lbl_zero.set_xy(rt + plus, _0        )
+        _lbl_0236.set_xy(rt + plus, _0 + m0236)
+        _lbl_0382.set_xy(rt + plus, _0 + m0382)
+        _lbl_0500.set_xy(rt + plus, _0 + m0500)
+        _lbl_0618.set_xy(rt + plus, _0 + m0618)
+        _lbl_0786.set_xy(rt + plus, _0 + m0786)
+        _lbl_one_.set_xy(rt + plus, _1        )
+        _lbl_1618.set_xy(rt + plus, _0 + m1618)
 
 //-----------------------------------------------------------------------------}
 //Displacement with swing detection
