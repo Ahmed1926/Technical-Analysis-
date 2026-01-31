@@ -442,10 +442,10 @@ method display(ob id, css, break_css, str)=>
         if id.breaker
             a_bx_ln_lb.unshift(
              bx_ln_lb.new(
-               box.new(id.loc, id.top, timenow + (tf_msec * 50), id.btm, na
+               box.new(id.loc, id.top, bar_index + 50, id.btm, na
              , bgcolor = break_css
              , extend  = extend.none
-             , xloc    = xloc.bar_time)
+             , xloc    = xloc.bar_index)
              , line (na)
              , label(na))
              )
@@ -455,11 +455,11 @@ method display(ob id, css, break_css, str)=>
             a_bx_ln_lb.unshift(
              bx_ln_lb.new(
                box(na)
-             , line.new(id.loc,   y  , id.loc  + (tf_msec * 50),    y
-             , xloc    = xloc.bar_time, color=css, width=2, extend=extend.right)
-             , label.new(              id.loc  + (tf_msec * 50),    y
+             , line.new(id.loc,   y  , id.loc + 50,    y
+             , xloc    = xloc.bar_index, color=css, width=2, extend=extend.right)
+             , label.new(              id.loc + 50,    y
              , text  = str == 'bl' ? '+OB' : 'OB-'
-             , xloc  = xloc.bar_time
+             , xloc  = xloc.bar_index
              , style = s    , color = color(na)
              , textcolor=css, size  = size.small))
              )
@@ -907,7 +907,7 @@ if showPreviousDayHiLo and timeframe.period != "D" and timeframe.period != "W" a
     // Daily High - horizontal line with label above on right
     dailyHighLine = line.new(n - 1, pdh, n + 50, pdh, extend=extend.right, color=support_line_color, width=supportLineWidth, style=line.style_solid)
     line.delete(dailyHighLine[1])
-    dailyHighLabel = label.new(n + 50, pdh, text="𝗗𝗮𝗶𝗹𝘆 𝗛𝗶𝗴𝗵", style=label.style_label_lower_right, color=color.new(color.white, 100), textcolor=color.black, size=size.small)
+    dailyHighLabel = label.new(n + 50, pdh, text="𝗗𝗮𝗶𝗹𝘆 𝗛𝗶𝗴𝗵", style=label.style_label_upper_right, color=color.new(color.white, 100), textcolor=color.black, size=size.small)
     label.delete(dailyHighLabel[1])
 
     // Daily Low - horizontal line with label above on right
@@ -920,7 +920,7 @@ if showLastWeeklyHiLo and timeframe.period != "D" and timeframe.period != "W" an
     // Weekly High - horizontal line with label above on right
     weeklyHighLine = line.new(n - 1, lwh, n + 50, lwh, extend=extend.right, color=support_last_week_line_color, width=supportLastWeekLineWidth, style=line.style_solid)
     line.delete(weeklyHighLine[1])
-    weeklyHighLabel = label.new(n + 50, lwh, text="𝗪𝗲𝗲𝗸𝗹𝘆 𝗛𝗶𝗴𝗵", style=label.style_label_lower_right, color=color.new(color.white, 100), textcolor=color.black, size=size.small)
+    weeklyHighLabel = label.new(n + 50, lwh, text="𝗪𝗲𝗲𝗸𝗹𝘆 𝗛𝗶𝗴𝗵", style=label.style_label_upper_right, color=color.new(color.white, 100), textcolor=color.black, size=size.small)
     label.delete(weeklyHighLabel[1])
 
     // Weekly Low - horizontal line with label above on right
