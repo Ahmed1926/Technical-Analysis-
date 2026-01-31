@@ -810,7 +810,7 @@ if showAsian and timeframe.period != "D" and timeframe.period != "W" and timefra
     asianEndBox = line.new(AsianToDate, asian_rth_high, AsianToDate, asian_rth_low, extend=extend.none, xloc=xloc.bar_time, color=line_color, style=line.style_solid, width=boxLineWidth)
     line.delete(asianEndBox[1])
 
-if showAsian and not inAsianSession and inAsianSession[1] and timeframe.period != "D" and timeframe.period != "W" and timeframe.period != "M"
+if showAsian and not inAsianSession and inAsianSession[1] and timeframe.period != "D" and timeframe.period != "W" and timeframe.period != "M" and i_mode != 'Present'
     box.new(AsianFromDate[1], asian_rth_high[1], AsianToDate[1], asian_rth_low[1], border_color=line_color, bgcolor=color.new(line_color, 90), xloc=xloc.bar_time)
     label.new(math.round(math.avg(AsianFromDate[1], AsianToDate[1])), math.avg(asian_rth_high[1], asian_rth_low[1]), "A", xloc.bar_time, yloc.price, color.new(color.black,100), label.style_label_center, line_color, size.small)
 
@@ -854,7 +854,7 @@ if showLondon and timeframe.period != "D" and timeframe.period != "W" and timefr
     londonEndBox = line.new(LondonToDate, london_rth_high, LondonToDate, london_rth_low, extend=extend.none, xloc=xloc.bar_time, color=lline_color, style=line.style_solid, width=lboxLineWidth)
     line.delete(londonEndBox[1])
 
-if show_london_session_rng and showLondon and not inLondonSession and inLondonSession[1] and timeframe.period != "D" and timeframe.period != "W" and timeframe.period != "M"
+if show_london_session_rng and showLondon and not inLondonSession and inLondonSession[1] and timeframe.period != "D" and timeframe.period != "W" and timeframe.period != "M" and i_mode != 'Present'
     box.new(LondonFromDate[1], london_rth_high[1], LondonToDate[1], london_rth_low[1], border_color=lline_color, bgcolor=color.new(lline_color, 90), xloc=xloc.bar_time)
     label.new(math.round(math.avg(LondonFromDate[1], LondonToDate[1])), math.avg(london_rth_high[1], london_rth_low[1]), "L", xloc.bar_time, yloc.price, color.new(color.black,100), label.style_label_center, lline_color, size.small)
 
@@ -898,7 +898,7 @@ if showNY and timeframe.period != "D" and timeframe.period != "W" and timeframe.
     nyEndBox = line.new(NyToDate, ny_rth_high, NyToDate, ny_rth_low, extend=extend.none, xloc=xloc.bar_time, color=nline_color, style=line.style_solid, width=nboxLineWidth)
     line.delete(nyEndBox[1])
 
-if show_ny_session_rng and showNY and not inNySession and inNySession[1] and timeframe.period != "D" and timeframe.period != "W" and timeframe.period != "M"
+if show_ny_session_rng and showNY and not inNySession and inNySession[1] and timeframe.period != "D" and timeframe.period != "W" and timeframe.period != "M" and i_mode != 'Present'
     box.new(NyFromDate[1], ny_rth_high[1], NyToDate[1], ny_rth_low[1], border_color=nline_color, bgcolor=color.new(nline_color, 90), xloc=xloc.bar_time)
     label.new(math.round(math.avg(NyFromDate[1], NyToDate[1])), math.avg(ny_rth_high[1], ny_rth_low[1]), "NY", xloc.bar_time, yloc.price, color.new(color.black,100), label.style_label_center, nline_color, size.small)
 
@@ -1522,8 +1522,12 @@ if showBB and a_breaker_bull.size() > 0
         if not bb.mitigated
             if close < bb.btm
                 bb.mitigated := true
+                // Delete broken BB
                 if breakerShowBoxes
-                    bb.bx.set_bgcolor(color.new(cBBplusA, 95))
+                    bb.bx.delete()
+                bb.ln.delete()
+                bb.lb.delete()
+                a_breaker_bull.remove(i)
 
 if showBB and a_breaker_bear.size() > 0
     for i = a_breaker_bear.size() - 1 to 0
@@ -1532,8 +1536,12 @@ if showBB and a_breaker_bear.size() > 0
         if not bb.mitigated
             if close > bb.top
                 bb.mitigated := true
+                // Delete broken BB
                 if breakerShowBoxes
-                    bb.bx.set_bgcolor(color.new(cBB_minA, 95))
+                    bb.bx.delete()
+                bb.ln.delete()
+                bb.lb.delete()
+                a_breaker_bear.remove(i)
 
 // Limit Breaker count
 if a_breaker_bull.size() > bbMaxCount
