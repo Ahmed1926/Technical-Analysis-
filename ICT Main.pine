@@ -190,11 +190,11 @@ nsessionLineWidth       = input.int(2, title="New York Session Line Width", grou
 // Previous Day/Week Levels
 showPreviousDayHiLo     = input.bool(true, title="Show Previous Days High / Low", group='Trading Sessions')
 previousDayHiLoColor    = input.string("yellow", title="Previous Days Line Color", group='Trading Sessions', options=["aqua", "black", "blue", "fuchsia", "gray", "green", "lime", "maroon", "navy", "olive", "orange", "purple", "red", "silver", "teal", "white", "yellow"])
-supportLineWidth        = input.int(10, title="Previous Days Line Width", group='Trading Sessions', minval=0, maxval=20)
+supportLineWidth        = input.int(1, title="Previous Days Line Width", group='Trading Sessions', minval=0, maxval=20)
 
 showLastWeeklyHiLo      = input.bool(true, title="Show Last Weeks High / Low", group='Trading Sessions')
 lastWeeklyHiLoColor     = input.string("orange", title="Last Week Line Color", group='Trading Sessions', options=["aqua", "black", "blue", "fuchsia", "gray", "green", "lime", "maroon", "navy", "olive", "orange", "purple", "red", "silver", "teal", "white", "yellow"])
-supportLastWeekLineWidth= input.int(10, title="Last Week Line Width", group='Trading Sessions', minval=0, maxval=20)
+supportLastWeekLineWidth= input.int(1, title="Last Week Line Width", group='Trading Sessions', minval=0, maxval=20)
 
 // ADR
 showADR                 = input.bool(false, title="Show Average Daily Range", group='Trading Sessions')
@@ -902,21 +902,6 @@ pdl = getData('D', low[1])
 
 lwh = getData('W', high[1])
 lwl = getData('W', low[1])
-
-start_support_hour_int = 17
-start_support_minute_int = 0
-end_support_hour_int = 17
-end_support_minute_int = 0
-
-supportStartTimeDelta = 24 - start_session_hour_int + 1
-supportStartTimeAlignment() => (hour + supportStartTimeDelta) > 24? 0 : 1
-isSupportStartTimeAlignment = supportStartTimeAlignment()
-
-supportEndTimeAlignment() => (hour + supportStartTimeDelta) > 24? 1 : 0
-isSupportEndTimeAlignment = supportEndTimeAlignment()
-
-SupportFromDate = timestamp(year, month, dayofmonth - isSupportStartTimeAlignment, start_support_hour_int, start_support_minute_int)
-SupportToDate = timestamp(year, month, dayofmonth + isSupportEndTimeAlignment, end_support_hour_int, end_support_minute_int) - chart_time_period_int
 
 if showPreviousDayHiLo and timeframe.period != "D" and timeframe.period != "W" and timeframe.period != "M"
     // Daily High - horizontal line with label above on right
