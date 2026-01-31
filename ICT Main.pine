@@ -149,7 +149,7 @@ maxNDOG    = input.int   (             1          , title = 'Show max', inline='
 //-----------------------------------------------------------------------------}
 //Fibonacci Settings
 //-----------------------------------------------------------------------------{
-iFib       = input.string(           'NONE'      , title = 'Fibonacci between last: ',   group = 'Fibonacci', options=['FVG', 'BPR', 'OB', 'Liq', 'VI', 'NWOG', 'NONE'])
+iFib       = input.string(           'NONE'      , title = 'Fibonacci between last: ',   group = 'Fibonacci', options=['Swings', 'FVG', 'BPR', 'OB', 'Liq', 'VI', 'NWOG', 'NONE'])
 iExt       = input.bool  (           true        , title = 'Extend lines'            ,   group = 'Fibonacci'                                                           )
 
 //-----------------------------------------------------------------------------}
@@ -1644,6 +1644,13 @@ if barstate.islast and showOB
 if barstate.islast
     x1 = 0, y1 = 0., x2 = 0, y2 = 0., box up = na, box dn = na
     switch iFib
+        'Swings' =>
+            if not na(top.y) and not na(btm.y)
+                topFirst = top.x > btm.x
+                x1  := topFirst ? btm.x : top.x
+                x2  := topFirst ? top.x : btm.x
+                y1  := topFirst ? btm.y : top.y
+                y2  := topFirst ? top.y : btm.y
         'FVG'   =>
             if bFVG_UP.size() > 0 and bFVG_DN.size() > 0
                 up  := bFVG_UP.get(0).box
