@@ -484,10 +484,10 @@ swings(len)=>
        :  low [len] < lower ? 1 : os
 
     if os == 0 and os[1] != 0
-        top := swing.new(high[length], bar_index[length])
+        top := swing.new(high[len], bar_index[len])
 
     if os == 1 and os[1] != 1
-        btm := swing.new(low[length], bar_index[length])
+        btm := swing.new(low[len], bar_index[len])
 
     [top, btm]
 
