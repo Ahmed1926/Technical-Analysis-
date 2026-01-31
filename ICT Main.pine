@@ -450,17 +450,16 @@ method display(ob id, css, break_css, str)=>
              , label(na))
              )
         else
-            y  = str == 'bl' ? id.btm : id.top
-            s  = str == 'bl' ? label.style_label_up : label.style_label_down
+            y  = id.top
             a_bx_ln_lb.unshift(
              bx_ln_lb.new(
                box(na)
-             , line.new(id.loc,   y  , id.loc + 50,    y
+             , line.new(id.loc, str == 'bl' ? id.btm : id.top, id.loc + 50, str == 'bl' ? id.btm : id.top
              , xloc    = xloc.bar_index, color=css, width=2, extend=extend.right)
              , label.new(              id.loc + 50,    y
              , text  = str == 'bl' ? '+OB' : 'OB-'
              , xloc  = xloc.bar_index
-             , style = s    , color = color(na)
+             , style = label.style_label_upper_right, color = color(na)
              , textcolor=css, size  = size.small))
              )
 
