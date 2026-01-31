@@ -23,7 +23,7 @@ i_mode     = input.string(         'Present'      , title = 'Mode'              
 //-----------------------------------------------------------------------------{
 showMS     = input.bool  (           true         , title = ''                       ,   group = 'Market Structures', inline = 'MS'                                    )
 len        = input.int   (            10          , title = '     Length   ' +sp2    ,   group = 'Market Structures', inline = 'MS'       , minval = 3, maxval =  10   )
-msSwingLen = input.int   (             5          , title = 'Swing Detection Length' ,   group = 'Market Structures', minval = 1, maxval = 20                          )
+msSwingLen = input.int   (            10          , title = 'Swing Detection Length' ,   group = 'Market Structures', minval = 1, maxval = 20                          )
 msMinBars  = input.int   (             3          , title = 'Min Bars Since Swing'   ,   group = 'Market Structures', minval = 1, maxval = 20                          )
 
 iMSS       = input.bool  (           true         , title = '       MSS'     +sp1    ,   group = 'Market Structures', inline = 'M1'                                    )
@@ -38,7 +38,7 @@ cBOSbr     = input.color (color.new(#e60400,  0), title = 'bearish'             
 //Displacement Settings
 //-----------------------------------------------------------------------------{
 sDispl     = input.bool  (           true         , title = 'Show Displacement'      ,   group = 'Displacement'                                                        )
-dispSwingLen = input.int (             5          , title = 'Swing Detection Length' ,   group = 'Displacement', minval = 1, maxval = 20                               )
+dispSwingLen = input.int (            10          , title = 'Swing Detection Length' ,   group = 'Displacement', minval = 1, maxval = 20                               )
 dispMinBars  = input.int (             3          , title = 'Min Bars Since Swing'   ,   group = 'Displacement', minval = 1, maxval = 20                               )
 perc_Body  = 0.36
 bxBack     = 10
@@ -49,7 +49,7 @@ bxBack     = 10
 sVimbl     = input.bool  (           true         , title = ''                       ,   group = 'Volume Imbalance' , inline = 'VI'                                    )
 visVim     = input.int   (             5          , title = "   # Visible VI's  "+sp1,   group = 'Volume Imbalance' , inline = 'VI'      , minval = 2, maxval = 100    )
 cVimbl     = input.color (color.new(#06b2d0,  0), title = ''                       ,   group = 'Volume Imbalance' , inline = 'VI'                                    )
-viSwingLen = input.int   (             5          , title = 'Swing Detection Length' ,   group = 'Volume Imbalance', minval = 1, maxval = 20                           )
+viSwingLen = input.int   (            10          , title = 'Swing Detection Length' ,   group = 'Volume Imbalance', minval = 1, maxval = 20                           )
 viMinBars  = input.int   (             3          , title = 'Min Bars Since Swing'   ,   group = 'Volume Imbalance', minval = 1, maxval = 20                           )
 
 //-----------------------------------------------------------------------------}
@@ -57,7 +57,7 @@ viMinBars  = input.int   (             3          , title = 'Min Bars Since Swin
 //-----------------------------------------------------------------------------{
 showOB     = input.bool  (           true         , title = 'Show Order Blocks'      ,   group = 'Order Blocks'                                                        )
 length     = input.int   (            10          , title = 'Swing Lookback'         ,   group = 'Order Blocks'                          , minval = 3                  )
-obSwingLen = input.int   (             5          , title = 'Swing Detection Length' ,   group = 'Order Blocks', minval = 1, maxval = 20                              )
+obSwingLen = input.int   (            10          , title = 'Swing Detection Length' ,   group = 'Order Blocks', minval = 1, maxval = 20                              )
 obMinBars  = input.int   (             3          , title = 'Min Bars Since Swing'   ,   group = 'Order Blocks', minval = 1, maxval = 20                              )
 showBull   = input.int   (             5          , title = 'Show Last Bullish OB'   ,   group = 'Order Blocks'                          , minval = 0                  )
 showBear   = input.int   (             5          , title = 'Show Last Bearish OB'   ,   group = 'Order Blocks'                          , minval = 0                  )
@@ -75,7 +75,7 @@ showLabels = input.bool  (          false, title = 'Show Historical Polarity Cha
 showBB           = input.bool  (  true    , title = 'Show Breaker Blocks'            ,   group = 'Breaker Blocks'                                  )
 breakerShowBoxes = input.bool  (  true    , title = 'Show as Boxes'                  ,   group = 'Breaker Blocks'                                  )
 bbMaxCount       = input.int   (      3   , title = 'Max Breaker Blocks'             ,   group = 'Breaker Blocks', minval = 1, maxval = 50          )
-bbSwingLen       = input.int   (      5   , title = 'Swing Detection Length'         ,   group = 'Breaker Blocks', minval = 1, maxval = 20          )
+bbSwingLen       = input.int   (     10   , title = 'Swing Detection Length'         ,   group = 'Breaker Blocks', minval = 1, maxval = 20          )
 bbMinBars        = input.int   (      3   , title = 'Min Bars Since Swing'           ,   group = 'Breaker Blocks', minval = 1, maxval = 20          )
 cBBplusA         = input.color (color.new(#0cc11a, 90), title = 'Bullish BB'        ,   group = 'Breaker Blocks', inline = 'bb1'                   )
 cBB_minA         = input.color (color.new(#ff1100, 90), title = 'Bearish BB'        ,   group = 'Breaker Blocks', inline = 'bb1'                   )
@@ -86,7 +86,7 @@ cBB_minA         = input.color (color.new(#ff1100, 90), title = 'Bearish BB'    
 showPB       = input.bool  (  true  , title = 'Show Propulsion Blocks'                 ,   group = 'Propulsion Blocks'                                )
 pbShowMean   = input.bool  (  false , title = 'Show Mean Line'                         ,   group = 'Propulsion Blocks'                                )
 pbMaxCount   = input.int   (     3  , title = 'Max Propulsion Blocks'                  ,   group = 'Propulsion Blocks', minval = 1, maxval = 50       )
-pbSwingLen   = input.int   (     5  , title = 'Swing Detection Length'                 ,   group = 'Propulsion Blocks', minval = 1, maxval = 20       )
+pbSwingLen   = input.int   (    10  , title = 'Swing Detection Length'                 ,   group = 'Propulsion Blocks', minval = 1, maxval = 20       )
 pbMinBars    = input.int   (     3  , title = 'Min Bars Since Swing'                   ,   group = 'Propulsion Blocks', minval = 1, maxval = 20       )
 cPBplus      = input.color (color.new(#089981, 90), title = 'Bullish PB'              ,   group = 'Propulsion Blocks', inline = 'pb1'                )
 cPBminus     = input.color (color.new(#F23645, 90), title = 'Bearish PB'              ,   group = 'Propulsion Blocks', inline = 'pb1'                )
@@ -100,7 +100,7 @@ mbShowBear  = input.bool  (  true  , title = 'Show Bearish MB'                  
 mbBullColor = input.color (color.new(color.green, 90), title = 'Bullish MB'          ,   group = 'Mitigation Blocks', inline = 'mb1'                )
 mbBearColor = input.color (color.new(color.red, 90), title = 'Bearish MB'            ,   group = 'Mitigation Blocks', inline = 'mb1'                )
 mbLookback  = input.int   (     3  , title = 'Max Visible MBs'                         ,   group = 'Mitigation Blocks'                                )
-mbSwingLen  = input.int   (     5  , title = 'Swing Detection Length'                  ,   group = 'Mitigation Blocks', minval = 1, maxval = 20      )
+mbSwingLen  = input.int   (    10  , title = 'Swing Detection Length'                  ,   group = 'Mitigation Blocks', minval = 1, maxval = 20      )
 mbMinBars   = input.int   (     3  , title = 'Min Bars Since Swing'                    ,   group = 'Mitigation Blocks', minval = 1, maxval = 20      )
 
 //-----------------------------------------------------------------------------}
@@ -110,7 +110,7 @@ showLq     = input.bool  (           true         , title = 'Show Liquidity'    
 a     = 10 / input.float (             4          , title = 'margin'                 ,   group = 'Liquidity'   , step = 0.1, minval = 2, maxval =   7                  )
 visLiq     = input.int   (             2          , title = '# Visible Liq. boxes'   ,   group = 'Liquidity'
            ,                                       minval = 1         , maxval = 50  , tooltip = 'In the same direction'                                               )
-liqSwingLen = input.int  (             5          , title = 'Swing Detection Length' ,   group = 'Liquidity', minval = 1, maxval = 20                                  )
+liqSwingLen = input.int  (            10          , title = 'Swing Detection Length' ,   group = 'Liquidity', minval = 1, maxval = 20                                  )
 liqMinBars  = input.int  (             3          , title = 'Min Bars Since Swing'   ,   group = 'Liquidity', minval = 1, maxval = 20                                  )
 cLIQ_B     = input.color (color.new(#fa451c,  0), title = 'Buyside Liquidity  '    ,   group = 'Liquidity'                                                           )
 cLIQ_S     = input.color (color.new(#1ce4fa,  0), title = 'Sellside Liquidity'     ,   group = 'Liquidity'                                                           )
@@ -123,7 +123,7 @@ shwIFVG    = input.bool  (           true         , title = 'Show IFVGs'        
 i_BPR      = input.bool  (           false        , title = 'Balance Price Range'    ,   group = 'Fair Value Gaps'                                                     )
 visBxs     = input.int   (             5          , title = '# Visible FVG\'s'       ,   group = 'Fair Value Gaps'
            ,                                       minval = 1         , maxval = 20  , tooltip = 'In the same direction'                                               )
-fvgSwingLen = input.int  (             5          , title = 'Swing Detection Length' ,   group = 'Fair Value Gaps', minval = 1, maxval = 20                            )
+fvgSwingLen = input.int  (            10          , title = 'Swing Detection Length' ,   group = 'Fair Value Gaps', minval = 1, maxval = 20                            )
 fvgMinBars  = input.int  (             3          , title = 'Min Bars Since Swing'   ,   group = 'Fair Value Gaps', minval = 1, maxval = 20                            )
 
 cFVGbl     = input.color (color.new(#00e676, 70), title = 'Bullish FVG  '          ,   group = 'Fair Value Gaps'  , inline = 'FVGbl'                                 )
