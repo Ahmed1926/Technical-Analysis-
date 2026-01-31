@@ -457,7 +457,7 @@ method display(ob id, css, break_css, str)=>
              , line.new(id.loc, str == 'bl' ? id.btm : id.top, id.loc + 50, str == 'bl' ? id.btm : id.top
              , xloc    = xloc.bar_index, color=css, width=2, extend=extend.right)
              , label.new(              id.loc + 50,    y
-             , text  = str == 'bl' ? '+OB' : 'OB-'
+             , text  = str == 'bl' ? 'OB+' : 'OB-'
              , xloc  = xloc.bar_index
              , style = label.style_label_upper_right, color = color(na)
              , textcolor=css, size  = size.small))
