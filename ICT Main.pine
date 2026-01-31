@@ -1173,34 +1173,30 @@ if i_BPR and bFVG_UP.size() > 0 and bFVG_DN.size() > 0
             bBPR_DN.pop().box.delete()
 
 //FVG's breaks
-for i = 0 to math.min(bxBack, bFVG_UP.size() -1)
+for i = bFVG_UP.size() - 1 to 0
     getUPi = bFVG_UP.get(i)
     if getUPi.active
         getUPi.box.set_right(bar_index +8)
         if low  < getUPi.box.get_top() and not i_BPR
             getUPi.box.set_border_style(line.style_dashed)
         if low  < getUPi.box.get_bottom()
-            if not i_BPR
-                getUPi.box.set_bgcolor(color.new(cFVGblBR, 95))
-                getUPi.box.set_border_style(line.style_dotted)
-            getUPi.box.set_right(bar_index)
-            getUPi.active := false
+            // Delete mitigated FVG
+            getUPi.box.delete()
+            bFVG_UP.remove(i)
 
-for i = 0 to math.min(bxBack, bFVG_DN.size() -1)
+for i = bFVG_DN.size() - 1 to 0
     getDNi = bFVG_DN.get(i)
     if getDNi.active
         getDNi.box.set_right(bar_index +8)
         if high > getDNi.box.get_bottom() and not i_BPR
             getDNi.box.set_border_style(line.style_dashed)
         if high > getDNi.box.get_top()
-            if not i_BPR
-                getDNi.box.set_bgcolor(color.new(cFVGbrBR, 95))
-                getDNi.box.set_border_style(line.style_dotted)
-            getDNi.box.set_right(bar_index)
-            getDNi.active := false
+            // Delete mitigated FVG
+            getDNi.box.delete()
+            bFVG_DN.remove(i)
 
 if i_BPR
-    for i = 0 to math.min(bxBack, bBPR_UP.size() -1)
+    for i = bBPR_UP.size() - 1 to 0
         getUPi = bBPR_UP.get(i)
         if getUPi.active
             getUPi.box.set_right(bar_index +8)
@@ -1209,20 +1205,16 @@ if i_BPR
                     if high > getUPi.box.get_bottom()
                         getUPi.box.set_border_style(line.style_dashed)
                     if high > getUPi.box.get_top   ()
-                        getUPi.box.set_bgcolor(color.new(cFVGblBR, 95))
-                        getUPi.box.set_border_style(line.style_dotted)
-                        getUPi.box.set_right(bar_index)
-                        getUPi.active := false
+                        getUPi.box.delete()
+                        bBPR_UP.remove(i)
                 1 =>
                     if low  < getUPi.box.get_top   ()
                         getUPi.box.set_border_style(line.style_dashed)
                     if low  < getUPi.box.get_bottom()
-                        getUPi.box.set_bgcolor(color.new(cFVGblBR, 95))
-                        getUPi.box.set_border_style(line.style_dotted)
-                        getUPi.box.set_right(bar_index)
-                        getUPi.active := false
+                        getUPi.box.delete()
+                        bBPR_UP.remove(i)
 
-    for i = 0 to math.min(bxBack, bBPR_DN.size() -1)
+    for i = bBPR_DN.size() - 1 to 0
         getDNi = bBPR_DN.get(i)
         if getDNi.active
             getDNi.box.set_right(bar_index +8)
@@ -1231,18 +1223,14 @@ if i_BPR
                     if high > getDNi.box.get_bottom()
                         getDNi.box.set_border_style(line.style_dashed)
                     if high > getDNi.box.get_top   ()
-                        getDNi.box.set_bgcolor(color.new(cFVGbrBR, 95))
-                        getDNi.box.set_border_style(line.style_dotted)
-                        getDNi.box.set_right(bar_index)
-                        getDNi.active := false
+                        getDNi.box.delete()
+                        bBPR_DN.remove(i)
                 1 =>
                     if low  < getDNi.box.get_top   ()
                         getDNi.box.set_border_style(line.style_dashed)
                     if low  < getDNi.box.get_bottom()
-                        getDNi.box.set_bgcolor(color.new(cFVGbrBR, 95))
-                        getDNi.box.set_border_style(line.style_dotted)
-                        getDNi.box.set_right(bar_index)
-                        getDNi.active := false
+                        getDNi.box.delete()
+                        bBPR_DN.remove(i)
 
 //NWOG/NDOG
 if barstate.isfirst
@@ -1629,6 +1617,23 @@ if a_mitblock_bear.size() > mbLookback
     old = a_mitblock_bear.pop()
     old.bx.delete()
     old.lb.delete()
+
+// Delete mitigated/broken MBs
+if a_mitblock_bull.size() > 0
+    for i = a_mitblock_bull.size() - 1 to 0
+        mb = a_mitblock_bull.get(i)
+        if close < mb.btm
+            mb.bx.delete()
+            mb.lb.delete()
+            a_mitblock_bull.remove(i)
+
+if a_mitblock_bear.size() > 0
+    for i = a_mitblock_bear.size() - 1 to 0
+        mb = a_mitblock_bear.get(i)
+        if close > mb.top
+            mb.bx.delete()
+            mb.lb.delete()
+            a_mitblock_bear.remove(i)
 
 //-----------------------------------------------------------------------------}
 //Set Order Blocks
