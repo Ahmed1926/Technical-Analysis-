@@ -1172,7 +1172,7 @@ if i_BPR and bFVG_UP.size() > 0 and bFVG_DN.size() > 0
              )
             bBPR_DN.pop().box.delete()
 
-//FVG's breaks
+//FVG's breaks - convert to IFVG when broken
 for i = bFVG_UP.size() - 1 to 0
     getUPi = bFVG_UP.get(i)
     if getUPi.active
@@ -1180,7 +1180,19 @@ for i = bFVG_UP.size() - 1 to 0
         if low  < getUPi.box.get_top() and not i_BPR
             getUPi.box.set_border_style(line.style_dashed)
         if low  < getUPi.box.get_bottom()
-            // Delete mitigated FVG
+            // Convert to bearish IFVG (resistance)
+            if shwIFVG
+                getUPi.box.set_bgcolor(cIFVGbr)
+                getUPi.box.set_border_color(color.new(cIFVGbr, 65))
+                getUPi.box.set_text('IFVG')
+                getUPi.box.set_right(bar_index)
+                getUPi.active := false
+            else
+                getUPi.box.delete()
+                bFVG_UP.remove(i)
+    else
+        // IFVG (was bullish FVG, now bearish IFVG) - delete when mitigated
+        if high > getUPi.box.get_top()
             getUPi.box.delete()
             bFVG_UP.remove(i)
 
@@ -1191,7 +1203,19 @@ for i = bFVG_DN.size() - 1 to 0
         if high > getDNi.box.get_bottom() and not i_BPR
             getDNi.box.set_border_style(line.style_dashed)
         if high > getDNi.box.get_top()
-            // Delete mitigated FVG
+            // Convert to bullish IFVG (support)
+            if shwIFVG
+                getDNi.box.set_bgcolor(cIFVGbl)
+                getDNi.box.set_border_color(color.new(cIFVGbl, 65))
+                getDNi.box.set_text('IFVG')
+                getDNi.box.set_right(bar_index)
+                getDNi.active := false
+            else
+                getDNi.box.delete()
+                bFVG_DN.remove(i)
+    else
+        // IFVG (was bearish FVG, now bullish IFVG) - delete when mitigated
+        if low < getDNi.box.get_bottom()
             getDNi.box.delete()
             bFVG_DN.remove(i)
 
