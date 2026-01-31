@@ -74,7 +74,7 @@ showLabels = input.bool  (          false, title = 'Show Historical Polarity Cha
 //-----------------------------------------------------------------------------{
 showBB           = input.bool  (  true    , title = 'Show Breaker Blocks'            ,   group = 'Breaker Blocks'                                  )
 breakerShowBoxes = input.bool  (  true    , title = 'Show as Boxes'                  ,   group = 'Breaker Blocks'                                  )
-bbMaxCount       = input.int   (      3   , title = 'Max Breaker Blocks'             ,   group = 'Breaker Blocks', minval = 1, maxval = 50          )
+bbMaxCount       = input.int   (      5   , title = 'Max Breaker Blocks'             ,   group = 'Breaker Blocks', minval = 1, maxval = 50          )
 bbSwingLen       = input.int   (     10   , title = 'Swing Detection Length'         ,   group = 'Breaker Blocks', minval = 1, maxval = 20          )
 bbMinBars        = input.int   (      3   , title = 'Min Bars Since Swing'           ,   group = 'Breaker Blocks', minval = 1, maxval = 20          )
 cBBplusA         = input.color (color.new(#0cc11a, 90), title = 'Bullish BB'        ,   group = 'Breaker Blocks', inline = 'bb1'                   )
@@ -85,7 +85,7 @@ cBB_minA         = input.color (color.new(#ff1100, 90), title = 'Bearish BB'    
 //-----------------------------------------------------------------------------{
 showPB       = input.bool  (  true  , title = 'Show Propulsion Blocks'                 ,   group = 'Propulsion Blocks'                                )
 pbShowMean   = input.bool  (  false , title = 'Show Mean Line'                         ,   group = 'Propulsion Blocks'                                )
-pbMaxCount   = input.int   (     3  , title = 'Max Propulsion Blocks'                  ,   group = 'Propulsion Blocks', minval = 1, maxval = 50       )
+pbMaxCount   = input.int   (     5  , title = 'Max Propulsion Blocks'                  ,   group = 'Propulsion Blocks', minval = 1, maxval = 50       )
 pbSwingLen   = input.int   (    10  , title = 'Swing Detection Length'                 ,   group = 'Propulsion Blocks', minval = 1, maxval = 20       )
 pbMinBars    = input.int   (     3  , title = 'Min Bars Since Swing'                   ,   group = 'Propulsion Blocks', minval = 1, maxval = 20       )
 cPBplus      = input.color (color.new(#089981, 90), title = 'Bullish PB'              ,   group = 'Propulsion Blocks', inline = 'pb1'                )
@@ -99,7 +99,7 @@ mbShowBull  = input.bool  (  true  , title = 'Show Bullish MB'                  
 mbShowBear  = input.bool  (  true  , title = 'Show Bearish MB'                         ,   group = 'Mitigation Blocks'                                )
 mbBullColor = input.color (color.new(color.green, 90), title = 'Bullish MB'          ,   group = 'Mitigation Blocks', inline = 'mb1'                )
 mbBearColor = input.color (color.new(color.red, 90), title = 'Bearish MB'            ,   group = 'Mitigation Blocks', inline = 'mb1'                )
-mbLookback  = input.int   (     3  , title = 'Max Visible MBs'                         ,   group = 'Mitigation Blocks'                                )
+mbLookback  = input.int   (     5  , title = 'Max Visible MBs'                         ,   group = 'Mitigation Blocks'                                )
 mbSwingLen  = input.int   (    10  , title = 'Swing Detection Length'                  ,   group = 'Mitigation Blocks', minval = 1, maxval = 20      )
 mbMinBars   = input.int   (     3  , title = 'Min Bars Since Swing'                    ,   group = 'Mitigation Blocks', minval = 1, maxval = 20      )
 
@@ -108,7 +108,7 @@ mbMinBars   = input.int   (     3  , title = 'Min Bars Since Swing'             
 //-----------------------------------------------------------------------------{
 showLq     = input.bool  (           true         , title = 'Show Liquidity'         ,   group = 'Liquidity'                                                           )
 a     = 10 / input.float (             4          , title = 'margin'                 ,   group = 'Liquidity'   , step = 0.1, minval = 2, maxval =   7                  )
-visLiq     = input.int   (             2          , title = '# Visible Liq. boxes'   ,   group = 'Liquidity'
+visLiq     = input.int   (            10          , title = '# Visible Liq. boxes'   ,   group = 'Liquidity'
            ,                                       minval = 1         , maxval = 50  , tooltip = 'In the same direction'                                               )
 liqSwingLen = input.int  (            10          , title = 'Swing Detection Length' ,   group = 'Liquidity', minval = 1, maxval = 20                                  )
 liqMinBars  = input.int  (             3          , title = 'Min Bars Since Swing'   ,   group = 'Liquidity', minval = 1, maxval = 20                                  )
